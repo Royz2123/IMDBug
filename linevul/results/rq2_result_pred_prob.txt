@@ -1,4 +1,0 @@
-
- Sorted By Prediction Probabilities 
- top0.2-Effort: 0.1596 
- top0.2-Recall: 0.375

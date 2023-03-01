@@ -26,6 +26,8 @@ pip install pickle
 pip install sklearn
 pip install pandas
 pip install tokenizers
+pip install language_data
+pip install tree_sitter
 ```
 
 And install the model like so:

@@ -1,6 +1,14 @@
 .idea
+.vscode
+.DS_Store
 data/
-linevul/saved_models/
+src/saved_models/
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
