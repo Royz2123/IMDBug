@@ -1,44 +1,23 @@
 from __future__ import division, absolute_import, print_function
 
 import argparse
-
-import pandas as pd
-import numpy as np
-import csv
-import pickle
-import re
-import torch
-import sklearn
 import os
 import random
-import custom
-import models
-import clang
-from clang import *
-from clang import cindex
-from pathlib import Path
-from tokenizers import ByteLevelBPETokenizer
-from tokenizers.implementations import ByteLevelBPETokenizer
-from tokenizers.processors import BertProcessing
-from torch.utils.data import Dataset, DataLoader, IterableDataset
-from transformers import RobertaConfig
-from transformers import RobertaForMaskedLM, RobertaForSequenceClassification
-from transformers import RobertaTokenizerFast
-from transformers import DataCollatorForLanguageModeling
-from transformers import Trainer, TrainingArguments
-from transformers import LineByLineTextDataset
-from transformers.modeling_outputs import SequenceClassifierOutput
-from custom import CustomDataCollatorForLanguageModeling
-from tokenizers import Tokenizer
-from tokenizers import normalizers, decoders
-from tokenizers.normalizers import StripAccents, unicode_normalizer_from_str, Replace
-from tokenizers.processors import TemplateProcessing
-from tokenizers import processors, pre_tokenizers
-from tokenizers.models import BPE
-from tokenizers.pre_tokenizers import PreTokenizer
-from tokenizers.pre_tokenizers import Whitespace
-from tokenizers import NormalizedString, PreTokenizedString
+import re
 from typing import List
+
+import numpy as np
+import torch
+from clang import cindex
+from tokenizers import NormalizedString, PreTokenizedString
+from tokenizers import Tokenizer
+from tokenizers import normalizers
+from tokenizers import processors
+from tokenizers.models import BPE
+from tokenizers.normalizers import StripAccents, Replace
+from tokenizers.pre_tokenizers import PreTokenizer
+from tokenizers.processors import TemplateProcessing
+from transformers import RobertaForSequenceClassification
 
 
 def get_vulberta_args(vulberta_model_name):

@@ -5,13 +5,12 @@ import logging
 import uvicorn
 from fastapi import FastAPI
 
-from imdbug_main import imdbug_test
-from linevul.inference_utils import CodeInput, get_filtered_colors, get_colors
-from linevul.linvul_api_utils import get_linvul_args, get_linevul_model
-from vulberta.inference_utils import get_vulberta_args, get_vulberta_model, infer
-from linevul_main import set_seed, TextDataset
-from linevul_model import Model
 from file_to_funcs.file_to_funcs import convert_file_to_funcs
+from imdbug_main import imdbug_test
+from inference_utils import CodeInput, get_filtered_colors, get_colors
+from linevul_main import TextDataset
+from linvul_api_utils import get_linvul_args, get_linevul_model
+from vulberta.inference_utils import get_vulberta_args, get_vulberta_model, infer
 
 app = FastAPI()
 
