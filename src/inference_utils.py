@@ -8,6 +8,7 @@ from pydantic import BaseModel
 class CodeInput(BaseModel):
     code: str
     filename: str = "cpp"
+    model_name: str = "linevul"
 
 
 def prob_to_severity(prob: float) -> Union[int, None]:
