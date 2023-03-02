@@ -15,11 +15,6 @@ from vulberta.inference_utils import get_vulberta_args, get_vulberta_model, infe
 
 app = FastAPI()
 
-# Define input data model
-class CodeInput(BaseModel):
-    filename: str = "cpp"
-    code: str
-    # TODO MOVE
 
 # Define route to handle POST requests
 @app.post("/analyze_code")

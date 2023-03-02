@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 class CodeInput(BaseModel):
     code: str
+    filename: str = "cpp"
 
 
 def prob_to_severity(prob: float) -> Union[int, None]:
