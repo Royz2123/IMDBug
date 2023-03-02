@@ -48,7 +48,7 @@ async def analyze_code(input_data: CodeInput):
     # Predict each function
     if model_selected == 'linevul':
         all_line_scores, y_preds, y_probs = await predict_on_function(args, funcs, model, tokenizer)
-    elif model_selected == 'vulberta':
+    elif 'VB' in model_selected:
         all_line_scores, y_preds, y_probs = infer(model, tokenizer, funcs, args)
     else:
         raise ValueError(f"Model {model_selected} not supported")
