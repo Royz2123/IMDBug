@@ -150,6 +150,7 @@ model.to(args.device)
 
 # Define input data model
 class CodeInput(BaseModel):
+    filename: str = "cpp"
     code: str
 
 
@@ -166,7 +167,7 @@ def prob_to_severity(prob: float) -> Union[int, None]:
 @app.post("/analyze_code")
 async def analyze_code(input_data: CodeInput):
     # Convert code to list of functions
-    splitted_code = convert_file_to_funcs(input_data.code)
+    splitted_code = convert_file_to_funcs(input_data.code, tree_type=input_data.filename.split(".")[-1])
     funcs = [func["function"] for func in splitted_code]
     start_indices = [func["start_line"] for func in splitted_code]
 

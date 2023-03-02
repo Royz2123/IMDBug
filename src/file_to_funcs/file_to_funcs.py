@@ -39,7 +39,7 @@ def convert_file_to_funcs(source_code: str, tree_type: str = "cpp") -> List[Dict
 
     if tree_type == "c":
         tree = c_parser.parse(bytes(source_code, "utf-8"))
-    elif tree_type == "cpp":
+    elif tree_type in ['cpp', 'h', 'hpp', 'h++', 'c++', 'cc', 'hh']:
         tree = cpp_parser.parse(bytes(source_code, "utf-8"))
     else:
         raise Exception(f"Invalid tree type for parsing: {tree_type}")
@@ -75,6 +75,6 @@ def convert_file_to_funcs(source_code: str, tree_type: str = "cpp") -> List[Dict
         start_line = node.start_point[0]
         end_line = node.end_point[0]
         definitions.append(
-            {"function": ''.join(lines[start_line:end_line]), "start_line": start_line, "end_line": end_line})
+            {"function": ''.join(lines[start_line:end_line + 1]), "start_line": start_line, "end_line": end_line})
 
     return definitions
