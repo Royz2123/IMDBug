@@ -15,14 +15,17 @@ from vulberta.inference_utils import get_vulberta_args, get_vulberta_model, infe
 
 app = FastAPI()
 
-
 # Define input data model
+class CodeInput(BaseModel):
+    filename: str = "cpp"
+    code: str
+    # TODO MOVE
 
 # Define route to handle POST requests
 @app.post("/analyze_code")
 async def analyze_code(input_data: CodeInput):
     # Convert code to list of functions
-    splitted_code: List = convert_file_to_funcs(input_data.code)
+    splitted_code: List = convert_file_to_funcs(input_data.code, tree_type=input_data.filename.split(".")[-1])
     global args, model, tokenizer
     funcs = [func["function"] for func in splitted_code]
     start_indices = [func["start_line"] for func in splitted_code]

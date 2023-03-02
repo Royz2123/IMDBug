@@ -19,6 +19,7 @@ function readDocumentProbs(doc: vscode.TextDocument) : Promise<Array<DiagnosticI
             "Content-Type": "application/json",
           },
         body: JSON.stringify({
+            filename: doc.fileName,
             code: doc.getText(),
         })
     }).then(response => {
