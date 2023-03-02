@@ -2,8 +2,9 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import os
-from typing import List, Any, Dict
+from typing import List
 
+import torch
 import uvicorn
 from fastapi import FastAPI
 
@@ -82,6 +83,7 @@ async def load_model(model_selected):
         }
 
 
+@torch.no_grad()
 async def predict_on_function(args, funcs, model, tokenizer):
     infer_dataset = TextDataset(tokenizer, args, file_type='infer', funcs=funcs)
     y_preds, y_probs, all_line_scores = imdbug_test(args, model, tokenizer, infer_dataset,

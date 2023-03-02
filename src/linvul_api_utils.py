@@ -6,12 +6,10 @@ import os
 
 import torch
 from tokenizers import Tokenizer
+from transformers import (RobertaConfig, RobertaForSequenceClassification, RobertaTokenizer)
 
-from linevul.linevul_main import set_seed
-from linevul.linevul_model import Model
-
-from transformers import (WEIGHTS_NAME, AdamW, get_linear_schedule_with_warmup,
-                          RobertaConfig, RobertaForSequenceClassification, RobertaTokenizer)
+from linevul_main import set_seed
+from linevul_model import Model
 
 
 def get_linvul_args():

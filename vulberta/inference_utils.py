@@ -77,6 +77,7 @@ def get_vulberta_model(args):
     return model, my_tokenizer
 
 
+@torch.no_grad()
 def infer(model, my_tokenizer, code_list, args):
     cleaned_code = [cleaner(code) for code in code_list]
     test_encodings = my_tokenizer.encode_batch(cleaned_code)
@@ -88,8 +89,8 @@ def infer(model, my_tokenizer, code_list, args):
     logits = outputs.logits
     probs = torch.softmax(logits, dim=1)
     y_preds = np.argmax(probs.detach().cpu().numpy(), axis=1)
-    y_probs = probs.detach().cpu().numpy()[:, y_preds]
-    all_line_scores = np.zeros_like(y_preds)
+    y_probs = probs.detach().cpu().numpy()[np.arange(len(y_preds)), y_preds]
+    all_line_scores = [np.zeros_like(y_preds) for _ in range(len(code_list))]
     return all_line_scores, y_preds, y_probs
 
 
