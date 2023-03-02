@@ -121,7 +121,7 @@ def get_linvul_args():
     # Setup args from Royzo
     logging.info('Using Royzo\'s args')
     args.model_name = '12heads_linevul_model.bin'
-    args.output_dir = './saved_models'
+    args.output_dir = '../linevul/saved_models'
     args.model_type = 'roberta'
     args.tokenizer_name = 'microsoft/codebert-base'
     args.model_name_or_path = 'microsoft/codebert-base'
@@ -132,7 +132,7 @@ def get_linvul_args():
     args.block_size = 512
     args.eval_batch_size = 512
     args.do_sorting_by_line_scores = True
-    args.reasoning_method = all
+    args.reasoning_method = 'all'
     args.do_local_explanation = True
     args.do_sorting_by_line_scores = True
 

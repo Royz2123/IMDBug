@@ -8,7 +8,7 @@ Language.build_library(
 
     # Include one or more languages
     [
-        'file_to_funcs\\tree-sitter-c'
+        'file_to_funcs/tree-sitter-c'
     ]
 )
 
@@ -18,7 +18,7 @@ Language.build_library(
 
     # Include one or more languages
     [
-        'file_to_funcs\\tree-sitter-cpp'
+        'file_to_funcs/tree-sitter-cpp'
     ]
 )
 

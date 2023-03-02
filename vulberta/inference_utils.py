@@ -24,10 +24,10 @@ def get_vulberta_args(vulberta_model_name):
     args = argparse.ArgumentParser()
     args.vulberta_model_name = vulberta_model_name
 
-    ## Set default device (GPU or CPU)
+    # Set default device (GPU or CPU)
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    ## Deterministic/reproducible flags
+    # Deterministic/reproducible flags
 
     seedlist = [42, 834, 692, 489, 901, 408, 819, 808, 531, 166]
 
@@ -41,12 +41,14 @@ def get_vulberta_args(vulberta_model_name):
     torch.backends.cudnn.enabled = True
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    return args
 
 
 def get_vulberta_model(args):
-    ## Custom tokenizer
-    ## Load pre-trained tokenizers
-    vocab, merges = BPE.read_file(vocab="./tokenizer/drapgh-vocab.json", merges="./tokenizer/drapgh-merges.txt")
+    # Custom tokenizer
+    # Load pre-trained tokenizers
+    vocab, merges = BPE.read_file(vocab="../vulberta/tokenizer/drapgh-vocab.json",
+                                  merges="../vulberta/tokenizer/drapgh-merges.txt")
     my_tokenizer = Tokenizer(BPE(vocab, merges, unk_token="<unk>"))
 
     my_tokenizer.normalizer = normalizers.Sequence([StripAccents(), Replace(" ", "Ä")])
@@ -67,25 +69,26 @@ def get_vulberta_model(args):
     my_tokenizer.enable_padding(direction='right', pad_id=1, pad_type_id=0, pad_token='<pad>', length=None,
                                 pad_to_multiple_of=None)
 
-    model = RobertaForSequenceClassification.from_pretrained(f'./models/VB-MLP_{args.vulberta_model_name}')
+    model = RobertaForSequenceClassification.from_pretrained(
+        f'../vulberta/models/VB-MLP_{args.vulberta_model_name}')
     model.to(args.device)
     model.eval()
 
     return model, my_tokenizer
 
 
-def infer(model, my_tokenizer, code, args):
-    cleaned_code = cleaner(code)
+def infer(model, my_tokenizer, code_list, args):
+    cleaned_code = [cleaner(code) for code in code_list]
     test_encodings = my_tokenizer.encode_batch(cleaned_code)
     test_encodings = process_encodings(test_encodings)
 
-    input_ids = torch.Tensor(test_encodings['input_ids']).to(args.device)
+    input_ids = torch.LongTensor(test_encodings['input_ids']).to(args.device)
     attention_mask = torch.Tensor(test_encodings['attention_mask']).to(args.device)
-    outputs = model(input_ids.unsqueeze(0), attention_mask=attention_mask.unsqueeze(0))
+    outputs = model(input_ids, attention_mask=attention_mask)
     logits = outputs.logits
     probs = torch.softmax(logits, dim=1)
-    y_probs = probs.detach().cpu().numpy()
-    y_preds = np.argmax(probs, axis=1)
+    y_preds = np.argmax(probs.detach().cpu().numpy(), axis=1)
+    y_probs = probs.detach().cpu().numpy()[:, y_preds]
     all_line_scores = np.zeros_like(y_preds)
     return all_line_scores, y_preds, y_probs
 
@@ -94,7 +97,7 @@ class MyTokenizer:
     cidx = cindex.Index.create()
 
     def clang_split(self, i: int, normalized_string: NormalizedString) -> List[NormalizedString]:
-        ## Tokkenize using clang
+        # Tokkenize using clang
         tok = []
         tu = self.cidx.parse('tmp.c',
                              args=[''],
@@ -106,11 +109,11 @@ class MyTokenizer:
             if spelling == '':
                 continue
 
-            ## Keyword no need
+            # Keyword no need
 
-            ## Punctuations no need
+            # Punctuations no need
 
-            ## Literal all to BPE
+            # Literal all to BPE
 
             # spelling = spelling.replace(' ', '')
             tok.append(NormalizedString(spelling))
@@ -131,7 +134,7 @@ def process_encodings(encodings):
 
 
 def cleaner(code):
-    ## Remove code comments
+    # Remove code comments
     pat = re.compile(r'(/\*([^*]|(\*+[^*/]))*\*+/)|(//.*)')
     code = re.sub(pat, '', code)
     code = re.sub('\n', '', code)
