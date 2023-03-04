@@ -1,6 +1,6 @@
 import pandas as pd 
 
-df = pd.read_csv("./data/static_analysis_results.csv")
+df = pd.read_csv("data/static_analysis_results.csv")
 
 static_results = df["static_analysis_result"].tolist()
 line_level_truth = df["flaw_lines"].tolist()

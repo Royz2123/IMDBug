@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import fetch from 'node-fetch';
 
-const API_URL = 'https://bbc4-77-137-40-106.ngrok.io/analyze_code';
+const API_URL = 'http://968b-82-81-39-206.ngrok.io/analyze_code';
 
 type DiagnosticItem = {
     // eslint-disable-next-line @typescript-eslint/naming-convention

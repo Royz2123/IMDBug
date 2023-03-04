@@ -11,10 +11,19 @@ from torch import Tensor
 from torch.utils.data import DataLoader, SequentialSampler
 from tqdm import tqdm
 
-from linevul_main import clean_special_token_values, get_word_att_scores, create_ref_input_ids, summarize_attributions, \
+from models.linevul.linevul_main import clean_special_token_values, get_word_att_scores, create_ref_input_ids, \
+    summarize_attributions, \
     clean_word_attr_scores, write_raw_preds_csv, TextDataset
 
 logger = logging.getLogger(__name__)
+
+
+@torch.no_grad()
+async def predict_on_function(args, funcs, model, tokenizer):
+    infer_dataset = TextDataset(tokenizer, args, file_type='infer', funcs=funcs)
+    y_preds, y_probs, all_line_scores = imdbug_test(args, model, tokenizer, infer_dataset,
+                                                    best_threshold=args.best_threshold)
+    return all_line_scores, y_preds, y_probs
 
 
 def imdbug_test(args, model, tokenizer, test_dataset: TextDataset, best_threshold=0.5):

@@ -2,31 +2,70 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import os
-from typing import List
 
-import torch
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, logger
 
+from common.log_util import LogHTTPException, setup_logging
 from file_to_funcs.file_to_funcs import convert_file_to_funcs
-from imdbug_main import imdbug_test
 from inference_utils import CodeInput, get_filtered_colors, get_colors
-from linevul_main import TextDataset
-from linvul_api_utils import get_linvul_args, get_linevul_model
-from vulberta.inference_utils import get_vulberta_args, get_vulberta_model, infer
+from models.linevul.imdbug_main import predict_on_function
+from models.linevul.linvul_api_utils import get_linvul_args, get_linevul_model
+from models.vulberta.inference_utils import get_vulberta_args, get_vulberta_model, infer
 
 app = FastAPI()
+setup_logging()
 loaded_models = dict()
+
+
+@app.on_event("startup")
+async def startup_event():
+    logger = logging.getLogger("uvicorn.access")
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s- %(levelname)s - %(message)s"))
+    logger.addHandler(handler)
+
+@app.get("/")
+async def alive():
+    logging.info("Returning alive status")
+    return "I'm alive!"
 
 
 @app.get("/get_model_names")
 async def get_model_names():
+    logging.info("Returning model names")
     model_names = ['linevul']
-    vulberta_models_path = '../vulberta/models'
+    vulberta_models_path = 'models/vulberta/saved_models'
     vulberta_models = [m for m in os.listdir(vulberta_models_path) if
                        os.path.isdir(os.path.join(vulberta_models_path, m)) and 'MACOSX' not in m and 'VB' in m]
     model_names.extend(vulberta_models)
     return model_names
+
+
+@app.post("/analyze_example")
+async def analyze_example():
+    return [
+        {
+            "line_index": 0,
+            "severity": 0,
+            "text": f"This is an error example (sup ido)"
+        },
+        {
+            "line_index": 1,
+            "severity": 1,
+            "text": f"This is a warning example"
+        },
+        {
+            "line_index": 2,
+            "severity": 2,
+            "text": f"This is an info example"
+        },
+        {
+            "line_index": 3,
+            "severity": 3,
+            "text": f"This is an hint example"
+        }
+    ]
 
 
 # Define route to handle POST requests
@@ -42,9 +81,12 @@ async def analyze_code(input_data: CodeInput):
     tokenizer = model_context["tokenizer"]
 
     # Convert code to list of functions
-    splitted_code: List = convert_file_to_funcs(input_data.code, tree_type=input_data.filename.split(".")[-1])
-    funcs = [func["function"] for func in splitted_code]
-    start_indices = [func["start_line"] for func in splitted_code]
+    split_code = convert_file_to_funcs(input_data.code, tree_type=input_data.filename.split(".")[-1])
+    funcs = [func["function"] for func in split_code]
+    start_indices = [func["start_line"] for func in split_code]
+
+    if len(funcs) == 0:
+        raise LogHTTPException(500, "No functions found in code! Returning ...")
 
     # Predict each function
     if model_selected == 'linevul':
@@ -52,7 +94,7 @@ async def analyze_code(input_data: CodeInput):
     elif 'VB' in model_selected:
         all_line_scores, y_preds, y_probs = infer(model, tokenizer, funcs, args)
     else:
-        raise ValueError(f"Model {model_selected} not supported")
+        raise LogHTTPException(500, f"Model {model_selected} not supported")
 
     # Create all line colors
     colors = await get_colors(all_line_scores, start_indices, y_preds, y_probs)
@@ -81,14 +123,6 @@ async def load_model(model_selected):
             "model": model,
             "tokenizer": tokenizer
         }
-
-
-@torch.no_grad()
-async def predict_on_function(args, funcs, model, tokenizer):
-    infer_dataset = TextDataset(tokenizer, args, file_type='infer', funcs=funcs)
-    y_preds, y_probs, all_line_scores = imdbug_test(args, model, tokenizer, infer_dataset,
-                                                    best_threshold=args.best_threshold)
-    return all_line_scores, y_preds, y_probs
 
 
 if __name__ == '__main__':

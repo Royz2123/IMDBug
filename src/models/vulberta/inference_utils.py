@@ -70,7 +70,7 @@ def get_vulberta_model(args):
                                 pad_to_multiple_of=None)
 
     model = RobertaForSequenceClassification.from_pretrained(
-        f'../vulberta/models/{args.vulberta_model_name}')
+        f'saved_models/{args.vulberta_model_name}')
     model.to(args.device)
     model.eval()
 

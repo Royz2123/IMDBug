@@ -1,10 +1,9 @@
-import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import f1_score, precision_score, recall_score
 import pickle
-import numpy as np
 
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import f1_score, precision_score, recall_score
 
 # load train, val data
 train = pd.read_csv('../data/big-vul_dataset/train.csv')
@@ -12,7 +11,7 @@ val = pd.read_csv('../data/big-vul_dataset/val.csv')
 # use train + val data to fit the model
 train_data = pd.concat([train, val])
 # load test data
-test_data = pd.read_csv('../data/big-vul_dataset/test.csv')
+test_data = pd.read_csv('../../data/big-vul_dataset/test.csv')
 # textual code data
 X_train = train_data["processed_func"]
 X_test = test_data["processed_func"]

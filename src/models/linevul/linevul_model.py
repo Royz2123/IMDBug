@@ -3,8 +3,10 @@ import torch.nn as nn
 from torch.nn import CrossEntropyLoss
 from transformers import RobertaForSequenceClassification
 
+
 class RobertaClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
+
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -19,20 +21,21 @@ class RobertaClassificationHead(nn.Module):
         x = self.dropout(x)
         x = self.out_proj(x)
         return x
-        
-class Model(RobertaForSequenceClassification):   
+
+
+class Model(RobertaForSequenceClassification):
     def __init__(self, encoder, config, tokenizer, args):
         super(Model, self).__init__(config=config)
         self.encoder = encoder
         self.tokenizer = tokenizer
         self.classifier = RobertaClassificationHead(config)
         self.args = args
-    
-        
+
     def forward(self, input_embed=None, labels=None, output_attentions=False, input_ids=None):
         if output_attentions:
             if input_ids is not None:
-                outputs = self.encoder.roberta(input_ids, attention_mask=input_ids.ne(1), output_attentions=output_attentions)
+                outputs = self.encoder.roberta(input_ids, attention_mask=input_ids.ne(1),
+                                               output_attentions=output_attentions)
             else:
                 outputs = self.encoder.roberta(inputs_embeds=input_embed, output_attentions=output_attentions)
             attentions = outputs.attentions
@@ -47,7 +50,8 @@ class Model(RobertaForSequenceClassification):
                 return prob, attentions
         else:
             if input_ids is not None:
-                outputs = self.encoder.roberta(input_ids, attention_mask=input_ids.ne(1), output_attentions=output_attentions)[0]
+                outputs = \
+                self.encoder.roberta(input_ids, attention_mask=input_ids.ne(1), output_attentions=output_attentions)[0]
             else:
                 outputs = self.encoder.roberta(inputs_embeds=input_embed, output_attentions=output_attentions)[0]
             logits = self.classifier(outputs)

@@ -30,20 +30,17 @@ pip install language_data
 pip install tree_sitter
 ```
 
-And install the model like so:
-```
-cd linevul
-cd saved_models
-cd checkpoint-best-f1
-gdown https://drive.google.com/uc?id=1oodyQqRb9jEcvLMVVKILmu8qHyNwd-zH
-cd ../../..
-```
-
-If doesn't work, check out: https://github.com/awsm-research/LineVul
+You can also refer to `scripts/make_env.sh` for a more detailed description of the installation press.
+In order to install the models, go to `scripts` and then run `download_models`. This will attempt to 
+download all the supported models. 
 
 ## Running the code
-Just run the `run.bat` script (which in turn runs the `imdbug_api.py` module)
+Just go to `scripts` and run the `run.bat` script (which in turn runs the `imdbug_app.py` module, you can just run 
+this directly yourself)
 ```
 cd \path\to\IMDBug
+cd scripts
 run.bat
 ```
+
+And you're done!

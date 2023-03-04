@@ -2,7 +2,7 @@
 .vscode
 .DS_Store
 data/
-src/saved_models/
+saved_models/
 out
 dist
 node_modules

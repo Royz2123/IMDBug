@@ -1,3 +1,4 @@
+cd ..
 conda create -n vulberta
 conda activate vulberta
 conda install ipykernel

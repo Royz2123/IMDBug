@@ -15,31 +15,27 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
+
 import argparse
-import glob
 import logging
 import os
 import pickle
 import random
-import re
+from typing import List
+
 import numpy as np
-import torch
-from torch.utils.data import DataLoader, Dataset, SequentialSampler, RandomSampler, TensorDataset
-from torch.utils.data.distributed import DistributedSampler
-from transformers import (WEIGHTS_NAME, AdamW, get_linear_schedule_with_warmup,
-                          RobertaConfig, RobertaForSequenceClassification, RobertaTokenizer)
-from tqdm import tqdm
-import multiprocessing
-from linevul_model import Model
 import pandas as pd
-# metrics
+import torch
+from captum.attr import LayerIntegratedGradients, DeepLift, DeepLiftShap, GradientShap, Saliency
 from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score
 from sklearn.metrics import auc
-# model reasoning
-from captum.attr import LayerIntegratedGradients, DeepLift, DeepLiftShap, GradientShap, Saliency
-# word-level tokenizer
 from tokenizers import Tokenizer
-from typing import List
+from torch.utils.data import DataLoader, Dataset, SequentialSampler, RandomSampler
+from tqdm import tqdm
+from transformers import (AdamW, get_linear_schedule_with_warmup,
+                          RobertaConfig, RobertaForSequenceClassification, RobertaTokenizer)
+
+from models.linevul.linevul_model import Model
 
 logger = logging.getLogger(__name__)
 

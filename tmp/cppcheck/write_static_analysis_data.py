@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_csv("./data/static_analysis_data.csv")
+df = pd.read_csv("data/static_analysis_data.csv")
 source = df["source"].tolist()
 index = 0
 for one_func in source:

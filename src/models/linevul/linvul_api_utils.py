@@ -8,8 +8,8 @@ import torch
 from tokenizers import Tokenizer
 from transformers import (RobertaConfig, RobertaForSequenceClassification, RobertaTokenizer)
 
-from linevul_main import set_seed
-from linevul_model import Model
+from models.linevul.linevul_main import set_seed
+from models.linevul.linevul_model import Model
 
 
 def get_linvul_args():
@@ -119,14 +119,14 @@ def get_linvul_args():
     # Setup args from Royzo
     logging.info('Using Royzo\'s args')
     args.model_name = '12heads_linevul_model.bin'
-    args.output_dir = '../linevul/saved_models'
+    args.output_dir = 'models/linevul/saved_models'
     args.model_type = 'roberta'
     args.tokenizer_name = 'microsoft/codebert-base'
     args.model_name_or_path = 'microsoft/codebert-base'
     args.do_test = True
     args.train_data_file = '../data/big-vul_dataset/train.csv'
     args.eval_data_file = '../data/big-vul_dataset/val.csv'
-    args.test_data_file = '../data/big-vul_dataset/small_test.csv'
+    args.test_data_file = '../../../data/big-vul_dataset/small_test.csv'
     args.block_size = 512
     args.eval_batch_size = 512
     args.do_sorting_by_line_scores = True

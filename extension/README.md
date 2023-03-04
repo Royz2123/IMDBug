@@ -18,6 +18,11 @@ in order to run the extension. The extension should run
 on every file open, file save, and refresh in the top 
 right corner menu. 
 
+It is recommended that you run the plugin with another popular existing 
+plugin called `Error Lens`. Just download that extension too, and 
+also make sure to run `ctrl-shift-p` and then `Error Lens: Toggle Hints`. 
+This will display the non-vulnerable functions in indicative green. 
+
 ## Modifying the extension 
 
 Open `extension\imdbug` in VSCode. In order to modify the
