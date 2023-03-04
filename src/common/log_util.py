@@ -1,15 +1,21 @@
 import logging
 from fastapi import HTTPException
 import logging
+from enum import Enum
+
+Color = Enum(
+    'Color', 'BLACK RED GREEN YELLOW BLUE MAGENTA CYAN WHITE', start=30
+)
 
 
 class CustomFormatter(logging.Formatter):
-    grey = "\x1b[1m"
+    grey = '\033[1m'
     yellow = "\x1b[33;20m"
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
-    format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+    # format = "%(asctime)s - %(name)-14s - %(levelname)-8s - %(message)s (%(filename)s:%(lineno)d)"
+    format = "%(asctime)s - %(name)-14s - %(levelname)-8s - %(message)s"
 
     FORMATS = {
         logging.DEBUG: grey + format + reset,
@@ -27,18 +33,23 @@ class CustomFormatter(logging.Formatter):
 
 class LogHTTPException(HTTPException):
     def __init__(self, status_code: int, msg: str):
-        logging.info(f"Returning {status_code}: {msg}")
+        logging.error(f"Returning {status_code}: {msg}")
         super(LogHTTPException, self).__init__(status_code, msg)
 
 
-def setup_logging():
+def pretty_log(msg, level: int = logging.INFO) -> None:
+    for line in msg.split("\n"):
+        logging.log(level, line)
+
+
+def setup_logging() -> None:
     # create console handler with a higher log level
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.INFO)
     ch.setFormatter(CustomFormatter())
 
     # Redirect all logging
-    for logger_name in ["root", "uvicorn", "uvicorn.access", "uvicorn.error"]:
+    for logger_name in ["root", "uvicorn.access"]:
         logger = logging.getLogger(logger_name)
         logger.setLevel(logging.INFO)
         logger.addHandler(ch)

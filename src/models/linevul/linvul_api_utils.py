@@ -7,9 +7,13 @@ import os
 import torch
 from tokenizers import Tokenizer
 from transformers import (RobertaConfig, RobertaForSequenceClassification, RobertaTokenizer)
+import transformers
 
 from models.linevul.linevul_main import set_seed
 from models.linevul.linevul_model import Model
+
+# Remove annoying warnings
+transformers.logging.set_verbosity_error()
 
 
 def get_linvul_args():
@@ -117,7 +121,7 @@ def get_linvul_args():
     args.device = device
 
     # Setup args from Royzo
-    logging.info('Using Royzo\'s args')
+    logging.info('\t\tUsing Royzo\'s args')
     args.model_name = '12heads_linevul_model.bin'
     args.output_dir = 'models/linevul/saved_models'
     args.model_type = 'roberta'
@@ -141,11 +145,12 @@ def get_linvul_args():
 
 def get_linevul_model(linevul_args):
     config = RobertaConfig.from_pretrained(
-        linevul_args.config_name if linevul_args.config_name else linevul_args.model_name_or_path)
+        linevul_args.config_name if linevul_args.config_name else linevul_args.model_name_or_path
+    )
     config.num_labels = 1
     config.num_attention_heads = linevul_args.num_attention_heads
     if linevul_args.use_word_level_tokenizer:
-        print('using wordlevel tokenizer!')
+        logging.info('\t\tUsing wordlevel tokenizer!')
         tokenizer = Tokenizer.from_file('./word_level_tokenizer/wordlevel.json')
     elif linevul_args.use_non_pretrained_tokenizer:
         tokenizer = RobertaTokenizer(vocab_file="bpe_tokenizer/bpe_tokenizer-vocab.json",
