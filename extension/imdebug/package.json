@@ -1,65 +1,77 @@
 {
-  "name": "imdbug",
-  "displayName": "imdbug",
-  "description": "",
-  "version": "0.0.7",
-  "engines": {
-    "vscode": "^1.72.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [
-    "onCommand:imdbug.activate"
-  ],
-  "main": "./out/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "imdbug.activate",
-        "title": "Activate",
-        "category": "imdbug"
-      },
-      {
-        "command": "imdbug.refresh",
-        "title": "Refresh current file",
-        "category": "imdbug"
-      }
+    "name": "imdbug",
+    "displayName": "imdbug",
+    "description": "",
+    "version": "0.0.8",
+    "engines": {
+        "vscode": "^1.72.0"
+    },
+    "categories": [
+        "Other"
     ],
-    "menus": {
-      "editor/title": [
-        {
-          "command": "imdbug.refresh",
-          "title": "imdbug: Refresh current file",
-          "group": "1_run"
+    "activationEvents": [
+        "onCommand:imdbug.activate",
+        "onCommand:imdbug.model"
+      ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "imdbug.activate",
+                "title": "Activate",
+                "category": "imdbug"
+            },
+            {
+                "command": "imdbug.refresh",
+                "title": "Refresh current file",
+                "category": "imdbug"
+            },
+            {
+                "command": "imdbug.model",
+                "title": "Pick a model",
+                "category": "imdbug"
+            }
+         
+           
+        ],
+        "menus": {
+            "editor/title": [
+                {
+                    "command": "imdbug.refresh",
+                    "title": "imdbug: Refzresh current file",
+                    "group": "1_run@1"
+                }
+                
+            ]
+            
+             
+        
         }
-      ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "test": "node ./out/test/runTest.js"
+    },
+    "devDependencies": {
+        "@types/glob": "^8.1.0",
+        "@types/mocha": "^10.0.1",
+        "@types/node": "16.x",
+        "@types/node-fetch": "^2.6.2",
+        "@types/vscode": "^1.72.0",
+        "@typescript-eslint/eslint-plugin": "^5.53.0",
+        "@typescript-eslint/parser": "^5.53.0",
+        "@vscode/test-electron": "^2.2.3",
+        "eslint": "^8.34.0",
+        "glob": "^8.1.0",
+        "mocha": "^10.2.0",
+        "typescript": "^4.9.5"
+    },
+    "dependencies": {
+        "node-fetch": "^2.6.1",
+        "vsce": "^2.15.0"
     }
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
-  },
-  "devDependencies": {
-    "@types/glob": "^8.1.0",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "16.x",
-    "@types/node-fetch": "^2.6.2",
-    "@types/vscode": "^1.72.0",
-    "@typescript-eslint/eslint-plugin": "^5.53.0",
-    "@typescript-eslint/parser": "^5.53.0",
-    "@vscode/test-electron": "^2.2.3",
-    "eslint": "^8.34.0",
-    "glob": "^8.1.0",
-    "mocha": "^10.2.0",
-    "typescript": "^4.9.5"
-  },
-  "dependencies": {
-    "node-fetch": "^2.6.1",
-    "vsce": "^2.15.0"
-  }
 }

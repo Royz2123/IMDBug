@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import fetch from 'node-fetch';
 
-const API_URL = 'http://968b-82-81-39-206.ngrok.io/analyze_code';
+const API_URL = 'http://localhost:1234/';
 
 type DiagnosticItem = {
     // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -10,9 +10,28 @@ type DiagnosticItem = {
     severity: vscode.DiagnosticSeverity;
 };
 
+type ModelList = {
+    label: string;
+    detail: string;
+}
+
+export async function getModels(): Promise<Array<ModelList>> {
+    return await fetch(API_URL.concat('get_model_names'), {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+          }
+    }).then(response => {
+        if (!response.ok) {
+          throw new Error(response.statusText);
+        }
+        return response.json();
+      });
+}
+
 function readDocumentProbs(doc: vscode.TextDocument) : Promise<Array<DiagnosticItem>> {
 
-    return fetch(API_URL, {
+    return fetch(API_URL.concat('analyze_example'), {
         method: "POST",
         headers: {
             // eslint-disable-next-line @typescript-eslint/naming-convention
