@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import os
+from typing import List, Dict
 
 import uvicorn
 from fastapi import FastAPI
@@ -24,20 +25,24 @@ async def alive():
 
 
 @app.get("/get_model_names")
-async def get_model_names():
+async def get_model_names() -> List[Dict[str,str]]:
     pretty_log("\nReturning model names")
 
     # Add linevul mode
-    model_names = ['linevul']
+    # model_names = ['linevul']
 
-    # Add vulbeta models
-    vulberta_models_path = 'models/vulberta/saved_models'
-    vulberta_models = [m for m in os.listdir(vulberta_models_path) if
-                       os.path.isdir(os.path.join(vulberta_models_path, m)) and 'MACOSX' not in m and 'VB' in m]
-    model_names.extend(vulberta_models)
-
+    # # Add vulbeta models
+    # vulberta_models_path = os.path.join('models', 'vulberta','saved_models')
+    # vulberta_models = [m for m in os.listdir(vulberta_models_path) if
+    #                    os.path.isdir(os.path.join(vulberta_models_path, m)) and 'MACOSX' not in m and 'VB' in m]
+    # model_names.extend(vulberta_models)
+    models = [
+        {'label': 'Vulberta', 'detail': 'amazing model!'},
+        {'label': 'LineVul', 'detail': 'another amazing model!'},
+        {'label': 'My brain', 'detail': 'less amazing model :/'}
+        ]
     # Return all model names
-    return model_names
+    return models
 
 
 @app.post("/analyze_example")
