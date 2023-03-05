@@ -28,13 +28,21 @@ async def get_model_names():
     pretty_log("\nReturning model names")
 
     # Add linevul mode
-    model_names = ['linevul']
+    model_names = [{"label": 'Linevul', "detail": "A Transformer-based Line-Level Vulnerability Prediction Approach"}]
 
     # Add vulbeta models
     vulberta_models_path = 'models/vulberta/saved_models'
-    vulberta_models = [m for m in os.listdir(vulberta_models_path) if
-                       os.path.isdir(os.path.join(vulberta_models_path, m)) and 'MACOSX' not in m and 'VB' in m]
-    model_names.extend(vulberta_models)
+    if os.path.exists(vulberta_models_path):
+        vulberta_models = [
+            m for m in os.listdir(vulberta_models_path)
+            if os.path.isdir(os.path.join(vulberta_models_path, m))
+            and 'MACOSX' not in m and 'VB' in m
+        ]
+        vulberta_models = [
+            {"label": model_name, "detail": "A variant of the VulBerta model"}
+            for model_name in vulberta_models
+        ]
+        model_names.extend(vulberta_models)
 
     # Return all model names
     return model_names

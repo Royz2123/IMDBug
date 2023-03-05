@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+import warnings
 from typing import List, Tuple, Dict, Union
 
 import numpy as np
@@ -9,12 +10,11 @@ from captum.attr import LayerIntegratedGradients, DeepLift, DeepLiftShap, Gradie
 from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score
 from torch import Tensor
 from torch.utils.data import DataLoader, SequentialSampler
-from tqdm import tqdm
 
 from models.linevul.linevul_main import clean_special_token_values, get_word_att_scores, create_ref_input_ids, \
-    summarize_attributions, \
-    clean_word_attr_scores, write_raw_preds_csv, TextDataset
+    summarize_attributions, clean_word_attr_scores, write_raw_preds_csv, TextDataset
 
+warnings.filterwarnings('ignore')
 logger = logging.getLogger(__name__)
 
 
@@ -35,10 +35,11 @@ def imdbug_test(args, model, tokenizer, test_dataset: TextDataset, best_threshol
     if args.n_gpu > 1:
         model = torch.nn.DataParallel(model)
 
-        # Eval!
-    logger.info("***** Running Test *****")
-    logger.info("  Num examples = %d", len(test_dataset))
-    logger.info("  Batch size = %d", args.eval_batch_size)
+    # Eval!
+    logging.info("\t\t***** Running Test *****")
+    logging.info("\t\t\tNum examples = %d", len(test_dataset))
+    logging.info("\t\t\tBatch size = %d", args.eval_batch_size)
+
     eval_loss = 0.0
     nb_eval_steps = 0
     model.eval()
@@ -52,6 +53,7 @@ def imdbug_test(args, model, tokenizer, test_dataset: TextDataset, best_threshol
             logits.append(logit.cpu().numpy())
             y_trues.append(labels.cpu().numpy())
         nb_eval_steps += 1
+
     # calculate scores
     logits = np.concatenate(logits, 0)
     y_trues = np.concatenate(y_trues, 0)
@@ -69,9 +71,9 @@ def imdbug_test(args, model, tokenizer, test_dataset: TextDataset, best_threshol
         "test_threshold": best_threshold,
     }
 
-    logger.info("***** Test results *****")
+    logging.info("\t\t***** Test results *****")
     for key in sorted(result.keys()):
-        logger.info("  %s = %s", key, str(round(result[key], 4)))
+        logging.info("\t\t\t%s = %s", key, str(round(result[key], 4)))
 
     # Return line scores
     logits = [l[1] for l in logits]
@@ -92,8 +94,8 @@ def imdbug_test(args, model, tokenizer, test_dataset: TextDataset, best_threshol
     if args.do_sorting_by_line_scores:
         for reasoning_method in all_reasoning_method:
             dataloader = DataLoader(test_dataset, sampler=test_sampler, batch_size=1, num_workers=0)
-            progress_bar = tqdm(dataloader, total=len(dataloader))
-            for idx, curr_function in enumerate(progress_bar):
+            # progress_bar = tqdm(dataloader, total=len(dataloader))
+            for idx, curr_function in enumerate(dataloader):
                 if logits[idx] > best_threshold:
                     curr_lines, curr_line_scores = get_line_scores(
                         tokenizer,

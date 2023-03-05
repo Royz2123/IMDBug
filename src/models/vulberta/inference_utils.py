@@ -47,8 +47,10 @@ def get_vulberta_args(vulberta_model_name):
 def get_vulberta_model(args):
     # Custom tokenizer
     # Load pre-trained tokenizers
-    vocab, merges = BPE.read_file(vocab="../vulberta/tokenizer/drapgh-vocab.json",
-                                  merges="../vulberta/tokenizer/drapgh-merges.txt")
+    vocab, merges = BPE.read_file(
+        vocab="models/vulberta/tokenizer/drapgh-vocab.json",
+        merges="models/vulberta/tokenizer/drapgh-merges.txt"
+    )
     my_tokenizer = Tokenizer(BPE(vocab, merges, unk_token="<unk>"))
 
     my_tokenizer.normalizer = normalizers.Sequence([StripAccents(), Replace(" ", "Ä")])
@@ -66,14 +68,19 @@ def get_vulberta_model(args):
     )
 
     my_tokenizer.enable_truncation(max_length=1024)
-    my_tokenizer.enable_padding(direction='right', pad_id=1, pad_type_id=0, pad_token='<pad>', length=None,
-                                pad_to_multiple_of=None)
-
+    my_tokenizer.enable_padding(
+        direction='right',
+        pad_id=1,
+        pad_type_id=0,
+        pad_token='<pad>',
+        length=None,
+        pad_to_multiple_of=None
+    )
     model = RobertaForSequenceClassification.from_pretrained(
-        f'saved_models/{args.vulberta_model_name}')
+        f'models/vulberta/saved_models/{args.vulberta_model_name}'
+    )
     model.to(args.device)
     model.eval()
-
     return model, my_tokenizer
 
 

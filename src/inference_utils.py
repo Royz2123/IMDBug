@@ -66,6 +66,6 @@ async def get_colors(all_line_scores, start_indices, y_preds, y_probs):
             colors.append({
                 "line_index": start_idx,
                 "severity": 3,
-                "text": f"This function looks fine (with {round(float(y_prob) * 100, 2)}% confidence)"
+                "text": f"This function looks fine (with {round((1 - float(y_prob)) * 100, 2)}% confidence)"
             })
     return colors

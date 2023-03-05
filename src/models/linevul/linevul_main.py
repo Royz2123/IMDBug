@@ -21,6 +21,7 @@ import logging
 import os
 import pickle
 import random
+import warnings
 from typing import List
 
 import numpy as np
@@ -36,6 +37,15 @@ from transformers import (AdamW, get_linear_schedule_with_warmup,
                           RobertaConfig, RobertaForSequenceClassification, RobertaTokenizer)
 
 from models.linevul.linevul_model import Model
+
+
+def fix():
+    warnings.warn("deprecated", DeprecationWarning)
+
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    fix()
 
 logger = logging.getLogger(__name__)
 
@@ -73,16 +83,16 @@ class TextDataset(Dataset):
 
         # Create examples from functions and labels
         self.examples = []
-        for i in tqdm(range(len(funcs))):
+        for i in range(len(funcs)):
             self.examples.append(convert_examples_to_features(funcs[i], labels[i], tokenizer, args))
 
         # Print more stuff for train
         if file_type == "train":
             for example in self.examples[:3]:
-                logger.info("*** Example ***")
-                logger.info("label: {}".format(example.label))
-                logger.info("input_tokens: {}".format([x.replace('\u0120', '_') for x in example.input_tokens]))
-                logger.info("input_ids: {}".format(' '.join(map(str, example.input_ids))))
+                logging.info("\t\t*** Example ***")
+                logging.info("\t\t\tLabel: {}".format(example.label))
+                logging.info("\t\t\tInput_tokens: {}".format([x.replace('\u0120', '_') for x in example.input_tokens]))
+                logging.info("\t\t\tInput_ids: {}".format(' '.join(map(str, example.input_ids))))
 
     def __len__(self):
         return len(self.examples)
@@ -278,10 +288,11 @@ def imdbug_test(args, model, tokenizer, test_dataset, best_threshold=0.5):
     if args.n_gpu > 1:
         model = torch.nn.DataParallel(model)
 
-        # Eval!
-    logger.info("***** Running Test *****")
-    logger.info("  Num examples = %d", len(test_dataset))
-    logger.info("  Batch size = %d", args.eval_batch_size)
+    # Eval!
+    logging.info("\t\t***** Running Test *****")
+    logging.info("\t\t\tNum examples = %d", len(test_dataset))
+    logging.info("\t\t\tBatch size = %d", args.eval_batch_size)
+
     eval_loss = 0.0
     nb_eval_steps = 0
     model.eval()
@@ -311,9 +322,9 @@ def imdbug_test(args, model, tokenizer, test_dataset, best_threshold=0.5):
         "test_threshold": best_threshold,
     }
 
-    logger.info("***** Test results *****")
+    logging.info("***** Test results *****")
     for key in sorted(result.keys()):
-        logger.info("  %s = %s", key, str(round(result[key], 4)))
+        logging.info("  %s = %s", key, str(round(result[key], 4)))
 
 
 def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
@@ -326,9 +337,9 @@ def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
         model = torch.nn.DataParallel(model)
 
     # Eval!
-    logger.info("***** Running Test *****")
-    logger.info("  Num examples = %d", len(test_dataset))
-    logger.info("  Batch size = %d", args.eval_batch_size)
+    logging.info("\t\t***** Running Test *****")
+    logging.info("\t\t\tNum examples = %d", len(test_dataset))
+    logging.info("\t\t\tBatch size = %d", args.eval_batch_size)
     eval_loss = 0.0
     nb_eval_steps = 0
     model.eval()
@@ -358,9 +369,9 @@ def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
         "test_threshold": best_threshold,
     }
 
-    logger.info("***** Test results *****")
+    logging.info("\t\t***** Test results *****")
     for key in sorted(result.keys()):
-        logger.info("  %s = %s", key, str(round(result[key], 4)))
+        logging.info("\t\t\t%s = %s", key, str(round(result[key], 4)))
 
     logits = [l[1] for l in logits]
     result_df = generate_result_df(logits, y_trues, y_preds, args)
@@ -429,24 +440,24 @@ def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
 
             recall_value = top_k_recall(pos_rank_df, neg_rank_df, sum_lines, sum_flaw_lines, args.top_k_recall_by_lines)
 
-            logger.info(f"total functions predicted as vulnerable: {total_pred_as_vul}")
+            logging.info(f"\t\t\tTotal functions predicted as vulnerable: {total_pred_as_vul}")
 
             to_write = ""
 
             to_write += "\n" + f"Reasoning Method: {reasoning_method}" + "\n"
 
             to_write += f"total predicted vulnerable lines: {total_pos_lines}" + "\n"
-            logger.info(f"total predicted vulnerable lines: {total_pos_lines}")
+            logging.info(f"\t\t\tTotal predicted vulnerable lines: {total_pos_lines}")
 
             to_write += f"total lines: {sum_lines}" + "\n"
-            logger.info(f"total lines: {sum_lines}")
+            logging.info(f"\t\t\tTotal lines: {sum_lines}")
 
             to_write += f"total flaw lines: {sum_flaw_lines}" + "\n"
-            logger.info(f"total flaw lines: {sum_flaw_lines}")
+            logging.info(f"\t\t\tTotal flaw lines: {sum_flaw_lines}")
 
             vul_as_vul = sum(pos_rank_df["label"].tolist())
             to_write += f"total flaw lines in predicted as vulnerable: {vul_as_vul}" + "\n"
-            logger.info(f"total flaw lines in predicted as vulnerable: {vul_as_vul}")
+            logging.info(f"\t\t\tTotal flaw lines in predicted as vulnerable: {vul_as_vul}")
 
             to_write += f"top{args.effort_at_top_k}-Effort: {effort}" + "\n"
             logger.info(f"top{args.effort_at_top_k}-Effort: {effort}")
