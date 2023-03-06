@@ -52,7 +52,7 @@ function readDocumentProbs(doc: vscode.TextDocument, modelName: String) : Promis
       });
 }
 
-function refreshDiagnostics(doc: vscode.TextDocument, diagnosticsCollection: vscode.DiagnosticCollection, modelName: String = 'vulberta'): void {
+function refreshDiagnostics(doc: vscode.TextDocument, diagnosticsCollection: vscode.DiagnosticCollection, modelName: String = 'LineVul'): void {
     vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: "imdbug: working on file" },
         async (_) => {
