@@ -31,21 +31,21 @@
                 "title": "Pick a model",
                 "category": "imdbug"
             }
-         
-           
         ],
         "menus": {
             "editor/title": [
                 {
                     "command": "imdbug.refresh",
-                    "title": "imdbug: Refzresh current file",
+                    "title": "imdbug: Refresh current file",
                     "group": "1_run@1"
+                },
+                {
+                    "command": "imdbug.model",
+                    "title": "imdbug: Pick a model",
+                    "group": "1_run@2"
                 }
-                
+
             ]
-            
-             
-        
         }
     },
     "scripts": {
