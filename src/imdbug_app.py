@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import os
+from typing import List, Dict
 
 import uvicorn
 from fastapi import FastAPI
@@ -25,7 +26,7 @@ async def alive():
 
 
 @app.get("/get_model_names")
-async def get_model_names():
+async def get_model_names() -> List[Dict[str,str]]:
     pretty_log("\nReturning model names")
     model_names = list()
 
@@ -52,7 +53,7 @@ async def get_model_names():
         model_names.extend(vulberta_models)
 
     # Return all model names
-    return model_names
+    return models
 
 
 @app.post("/analyze_example")

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import fetch from 'node-fetch';
 
-const API_URL = 'http://968b-82-81-39-206.ngrok.io/analyze_code';
+const API_URL = 'http://localhost:1234/';
 
 type DiagnosticItem = {
     // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -10,9 +10,30 @@ type DiagnosticItem = {
     severity: vscode.DiagnosticSeverity;
 };
 
-function readDocumentProbs(doc: vscode.TextDocument) : Promise<Array<DiagnosticItem>> {
+type Model = {
+    label: string;
+    detail: string;
+}
 
-    return fetch(API_URL, {
+export function getModels(): Promise<Array<Model>> {
+    return fetch(API_URL.concat('get_model_names'), {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+          }
+    }).then(response => {
+        if (!response.ok) {
+          throw new Error(response.statusText);
+        }
+        return response.json();
+      });
+}
+
+
+
+function readDocumentProbs(doc: vscode.TextDocument, modelName: String) : Promise<Array<DiagnosticItem>> {
+
+    return fetch(API_URL.concat('analyze_example'), {
         method: "POST",
         headers: {
             // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -21,6 +42,7 @@ function readDocumentProbs(doc: vscode.TextDocument) : Promise<Array<DiagnosticI
         body: JSON.stringify({
             filename: doc.fileName,
             code: doc.getText(),
+            model: modelName,
         })
     }).then(response => {
         if (!response.ok) {
@@ -30,13 +52,13 @@ function readDocumentProbs(doc: vscode.TextDocument) : Promise<Array<DiagnosticI
       });
 }
 
-function refreshDiagnostics(doc: vscode.TextDocument, diagnosticsCollection: vscode.DiagnosticCollection): void {
+function refreshDiagnostics(doc: vscode.TextDocument, diagnosticsCollection: vscode.DiagnosticCollection, modelName: String = 'vulberta'): void {
     vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: "imdbug: working on file" },
         async (_) => {
             const diagnostics: vscode.Diagnostic[] = [];
-        
-            const items = await readDocumentProbs(doc);
+
+            const items = await readDocumentProbs(doc, modelName);
             for (let i = 0; i < items.length; i++) {
                 const diagnostic = createDiagnostic(items[i], doc);
                 if (diagnostic) {
@@ -68,8 +90,14 @@ export function refreshDocumentNow(diagnosticsCollection: vscode.DiagnosticColle
 	}
 }
 
+export function refreshModelNow(diagnosticsCollection: vscode.DiagnosticCollection, modelName: String): void {
+    if (vscode.window.activeTextEditor) {
+		refreshDiagnostics(vscode.window.activeTextEditor.document, diagnosticsCollection, modelName);
+	}
+}
+
 export function subscribeToDocumentChanges(context: vscode.ExtensionContext, diagnosticsCollection: vscode.DiagnosticCollection): void {
-	refreshDocumentNow(diagnosticsCollection);
+    refreshDocumentNow(diagnosticsCollection);
     
 	context.subscriptions.push(
 		vscode.window.onDidChangeActiveTextEditor(editor => {

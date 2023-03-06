@@ -1,22 +1,44 @@
 import * as vscode from 'vscode';
-import { subscribeToDocumentChanges, refreshDocumentNow } from './diagnostics';
+import { subscribeToDocumentChanges, refreshDocumentNow, refreshModelNow, getModels } from './diagnostics';
 
 export function activate(context: vscode.ExtensionContext) {
-
+	const models = getModels()
 	const diagnosticsCollection = vscode.languages.createDiagnosticCollection("imdbug");
 	context.subscriptions.push(diagnosticsCollection);
 
 	subscribeToDocumentChanges(context, diagnosticsCollection);
 
-	const activateCommand = vscode.commands.registerCommand('imdbug.activate', () => {
-		vscode.window.showInformationMessage('imdbug started working');
-	});
-	context.subscriptions.push(activateCommand);
+	context.subscriptions.push(
+		vscode.commands.registerCommand('imdbug.activate', () => {
+			vscode.window.showInformationMessage('imdbug started working');
+		})
+	);
 
-	const refreshCommand = vscode.commands.registerCommand('imdbug.refresh', () => {
-		refreshDocumentNow(diagnosticsCollection);
-	});
-	context.subscriptions.push(refreshCommand);
+	context.subscriptions.push(
+		vscode.commands.registerCommand('imdbug.refresh', () => {
+			refreshDocumentNow(diagnosticsCollection);
+		})
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('imdbug.model', 
+		async function () {
+				const model = await vscode.window.showQuickPick(models, {
+					matchOnDetail: true
+				}).then(
+					model => {
+						if (!model) {
+						  throw new Error('Error in extension trying to ge model from user!');
+						}
+						const modelName = model.label;
+						refreshModelNow(diagnosticsCollection, modelName)
+					  }
+				)
+			}
+		
+			
+		)
+	)
 }
 
 export function deactivate() {}
