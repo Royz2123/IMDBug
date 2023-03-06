@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { subscribeToDocumentChanges, refreshDocumentNow, getModels } from './diagnostics';
+import { subscribeToDocumentChanges, refreshDocumentNow, refreshModelNow, getModels } from './diagnostics';
 
 export function activate(context: vscode.ExtensionContext) {
 	const models = getModels()
@@ -25,9 +25,17 @@ export function activate(context: vscode.ExtensionContext) {
 		async function () {
 				const model = await vscode.window.showQuickPick(models, {
 					matchOnDetail: true
-				})
-				console.log(model)
+				}).then(
+					model => {
+						if (!model) {
+						  throw new Error('Error in extension trying to ge model from user!');
+						}
+						const modelName = model.label;
+						refreshModelNow(diagnosticsCollection, modelName)
+					  }
+				)
 			}
+		
 			
 		)
 	)

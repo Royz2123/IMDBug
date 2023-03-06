@@ -2,7 +2,7 @@
     "name": "imdbug",
     "displayName": "imdbug",
     "description": "",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "engines": {
         "vscode": "^1.72.0"
     },
