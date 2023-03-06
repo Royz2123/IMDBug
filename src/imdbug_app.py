@@ -14,6 +14,7 @@ from models.linevul.linvul_api_utils import get_linvul_args, get_linevul_model
 from models.vulberta.inference_utils import get_vulberta_args, get_vulberta_model, infer
 
 app = FastAPI()
+setup_logging()
 loaded_models = dict()
 
 
@@ -26,9 +27,15 @@ async def alive():
 @app.get("/get_model_names")
 async def get_model_names():
     pretty_log("\nReturning model names")
+    model_names = list()
 
     # Add linevul mode
-    model_names = [{"label": 'Linevul', "detail": "A Transformer-based Line-Level Vulnerability Prediction Approach"}]
+    line_vul_model_path = 'models/linevul/saved_models'
+    if os.path.exists(line_vul_model_path):
+        model_names.append({
+            "label": 'LineVul',
+            "detail": "A Transformer-based Line-Level Vulnerability Prediction Approach"
+        })
 
     # Add vulbeta models
     vulberta_models_path = 'models/vulberta/saved_models'
@@ -36,7 +43,7 @@ async def get_model_names():
         vulberta_models = [
             m for m in os.listdir(vulberta_models_path)
             if os.path.isdir(os.path.join(vulberta_models_path, m))
-            and 'MACOSX' not in m and 'VB' in m
+               and 'MACOSX' not in m and 'VB' in m
         ]
         vulberta_models = [
             {"label": model_name, "detail": "A variant of the VulBerta model"}
@@ -97,7 +104,7 @@ async def analyze_code(input_data: CodeInput):
         raise LogHTTPException(500, "No functions found in code! Returning ...")
 
     # Predict each function
-    if model_selected == 'linevul':
+    if model_selected == 'LineVul':
         all_line_scores, y_preds, y_probs = await predict_on_function(args, funcs, model, tokenizer)
     elif 'VB' in model_selected:
         all_line_scores, y_preds, y_probs = infer(model, tokenizer, funcs, args)
@@ -118,7 +125,7 @@ async def load_model(model_selected):
     global loaded_models
     if model_selected not in loaded_models:
         logging.info(f"\t\tModel {model_selected} was not found in loaded models, attempting to load ...")
-        if model_selected == 'linevul':
+        if model_selected == 'LineVul':
             args = get_linvul_args()
             model, tokenizer = get_linevul_model(args)
         elif 'VB' in model_selected:
@@ -135,5 +142,4 @@ async def load_model(model_selected):
 
 
 if __name__ == '__main__':
-    setup_logging()
     uvicorn.run(app, host='0.0.0.0', port=8080, log_config=None)
