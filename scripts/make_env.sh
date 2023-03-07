@@ -15,3 +15,14 @@ pip install uvicorn
 pip install fastapi
 pip install captum
 pip install tree_sitter
+pip install torchvision
+pip install tensorflow
+pip install gensim
+pip install sctokenizer
+pip install nltk
+pip install torch>=1.0.0
+pip install tqdm>=4.31.1
+pip install transformers>=3.0.0
+pip install pandas>=1.0.1
+pip install numpy
+pip install matplotlib

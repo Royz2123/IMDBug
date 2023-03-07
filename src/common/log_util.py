@@ -50,8 +50,6 @@ def pretty_log(msg, level: int = logging.INFO) -> None:
 
 
 def setup_logging() -> None:
-    logging.addLevelName(TITLE_LEVEL, "TITLE")
-
     # create console handler with a higher log level
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
@@ -64,6 +62,9 @@ def setup_logging() -> None:
         logger.setLevel(logging.DEBUG)
         if logger_name != "uvicorn":
             logger.addHandler(ch)
+
+    logging.addLevelName(TITLE_LEVEL, "TITLE")
+
 
 
 if __name__ == "__main__":

@@ -42,7 +42,7 @@ function readDocumentProbs(doc: vscode.TextDocument, modelName: String) : Promis
         body: JSON.stringify({
             code: doc.getText(),
             file_name: doc.fileName,
-            model_name: modelName,
+            model_label: modelName,
         })
     }).then(response => {
         if (!response.ok) {

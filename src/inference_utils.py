@@ -7,8 +7,8 @@ from pydantic import BaseModel
 
 class CodeInput(BaseModel):
     code: str
-    file_name: str = "cpp"
-    model_name: str = "LineVul"
+    file_name: str = ".cpp"
+    model_label: str = "LineVul"
 
 
 def prob_to_severity(prob: float) -> Union[int, None]:
@@ -20,7 +20,7 @@ def prob_to_severity(prob: float) -> Union[int, None]:
         return None
 
 
-async def get_filtered_colors(colors):
+def get_filtered_colors(colors):
     filtered_colors = []
     for color in colors:
         if "severity" in color:
@@ -32,7 +32,7 @@ async def get_filtered_colors(colors):
     return filtered_colors
 
 
-async def get_colors(all_line_scores, start_indices, y_preds, y_probs):
+def get_colors(all_line_scores, start_indices, y_preds, y_probs):
     colors = list()
     for start_idx, y_pred, y_prob, line_scores in zip(start_indices, y_preds, y_probs, all_line_scores):
         if y_pred:

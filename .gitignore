@@ -9,7 +9,6 @@ node_modules
 .vscode-test/
 *.vsix
 
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
