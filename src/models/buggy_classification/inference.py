@@ -38,5 +38,5 @@ int main(int argc, char *argv[])
        return 0;
 }"""
 texts = [code]
-res = v.inference(model,texts)
+res = v.inference(model, texts)
 print(res)

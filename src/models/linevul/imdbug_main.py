@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 @torch.no_grad()
-async def predict_on_function(args, funcs, model, tokenizer):
+def predict_on_function(args, funcs, model, tokenizer):
     infer_dataset = TextDataset(tokenizer, args, file_type='infer', funcs=funcs)
     y_preds, y_probs, all_line_scores = imdbug_test(args, model, tokenizer, infer_dataset,
                                                     best_threshold=args.best_threshold)

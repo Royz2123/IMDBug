@@ -16,7 +16,7 @@ from models.linevul.linevul_model import Model
 transformers.logging.set_verbosity_error()
 
 
-def get_linvul_args():
+def get_linveul_args():
     parser = argparse.ArgumentParser()
 
     ## parameters
@@ -121,7 +121,6 @@ def get_linvul_args():
     args.device = device
 
     # Setup args from Royzo
-    logging.info('\t\tUsing Royzo\'s args')
     args.model_name = '12heads_linevul_model.bin'
     args.output_dir = 'models/linevul/saved_models'
     args.model_type = 'roberta'
