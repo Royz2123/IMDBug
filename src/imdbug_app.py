@@ -85,8 +85,8 @@ async def analyze_example():
 # Define route to handle POST requests
 @app.post("/analyze_code")
 async def analyze_code(input_data: CodeInput):
-    pretty_log("\nStarting code analysis")
     model_selected = input_data.model_name
+    pretty_log(f"\nStarting code analysis for {model_selected}")
 
     # Load model
     await load_model(model_selected)
@@ -96,7 +96,7 @@ async def analyze_code(input_data: CodeInput):
     tokenizer = model_context["tokenizer"]
 
     # Convert code to list of functions
-    split_code = convert_file_to_funcs(input_data.code, tree_type=input_data.filename.split(".")[-1])
+    split_code = convert_file_to_funcs(input_data.code, tree_type=input_data.file_name.split(".")[-1])
     funcs = [func["function"] for func in split_code]
     start_indices = [func["start_line"] for func in split_code]
 
@@ -132,7 +132,7 @@ async def load_model(model_selected):
             args = get_vulberta_args(model_selected)
             model, tokenizer = get_vulberta_model(args)
         else:
-            raise ValueError(f"Model {model_selected} not supported")
+            raise LogHTTPException(500, f"Model {model_selected} not supported")
         loaded_models[model_selected] = {
             "args": args,
             "model": model,

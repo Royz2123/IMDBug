@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 class CodeInput(BaseModel):
     code: str
-    filename: str = "cpp"
+    file_name: str = "cpp"
     model_name: str = "LineVul"
 
 
@@ -53,12 +53,13 @@ async def get_colors(all_line_scores, start_indices, y_preds, y_probs):
             line_code_colors = line_code_colors[1:]
 
             # Normalize line code scores to actual probabilities
-            min_score = min(line_scores)
-            max_score = max(line_scores)
-            for line_code in line_code_colors:
-                line_code["probability"] = (line_code["probability"] - min_score) / (max_score - min_score)
-                line_code["text"] = f"This line has a {round(float(line_code['probability']) * 100, 2)}% " \
-                                    f"chance of being the reason for this"
+            if len(line_scores):
+                min_score = min(line_scores)
+                max_score = max(line_scores)
+                for line_code in line_code_colors:
+                    line_code["probability"] = (line_code["probability"] - min_score) / (max_score - min_score)
+                    line_code["text"] = f"This line has a {round(float(line_code['probability']) * 100, 2)}% " \
+                                        f"chance of being the reason for this"
 
             # Add to line code colors
             colors += line_code_colors

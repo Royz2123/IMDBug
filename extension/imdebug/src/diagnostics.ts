@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import fetch from 'node-fetch';
 
-const API_URL = 'http://localhost:1234/';
+const API_URL = 'http://localhost:8080/';
 
 type DiagnosticItem = {
     // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -33,16 +33,16 @@ export function getModels(): Promise<Array<Model>> {
 
 function readDocumentProbs(doc: vscode.TextDocument, modelName: String) : Promise<Array<DiagnosticItem>> {
 
-    return fetch(API_URL.concat('analyze_example'), {
+    return fetch(API_URL.concat('analyze_code'), {
         method: "POST",
         headers: {
             // eslint-disable-next-line @typescript-eslint/naming-convention
             "Content-Type": "application/json",
           },
         body: JSON.stringify({
-            filename: doc.fileName,
             code: doc.getText(),
-            model: modelName,
+            file_name: doc.fileName,
+            model_name: modelName,
         })
     }).then(response => {
         if (!response.ok) {
@@ -52,13 +52,14 @@ function readDocumentProbs(doc: vscode.TextDocument, modelName: String) : Promis
       });
 }
 
-function refreshDiagnostics(doc: vscode.TextDocument, diagnosticsCollection: vscode.DiagnosticCollection, modelName: String = 'vulberta'): void {
+function refreshDiagnostics(doc: vscode.TextDocument, diagnosticsCollection: vscode.DiagnosticCollection, modelName: String = 'LineVul'): void {
     vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: "imdbug: working on file" },
+        { location: vscode.ProgressLocation.Notification, title: "IMDBug: working on file" },
         async (_) => {
+            console.log("Refreshing diagnostics for file with model: %s", modelName)
+            
             const diagnostics: vscode.Diagnostic[] = [];
-
-            const items = await readDocumentProbs(doc, modelName);
+            const items = await readDocumentProbs(doc, modelName).catch((e) =>{ console.log("Got error from server: %s", e); return []});
             for (let i = 0; i < items.length; i++) {
                 const diagnostic = createDiagnostic(items[i], doc);
                 if (diagnostic) {

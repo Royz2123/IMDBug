@@ -10,7 +10,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('imdbug.activate', () => {
-			vscode.window.showInformationMessage('imdbug started working');
+			vscode.window.showInformationMessage('IMDBug started working');
 		})
 	);
 
@@ -28,9 +28,10 @@ export function activate(context: vscode.ExtensionContext) {
 				}).then(
 					model => {
 						if (!model) {
-						  throw new Error('Error in extension trying to ge model from user!');
+						  throw new Error('Error in extension trying to get model from user!');
 						}
 						const modelName = model.label;
+						console.log("User selected: %s", modelName)
 						refreshModelNow(diagnosticsCollection, modelName)
 					  }
 				)
