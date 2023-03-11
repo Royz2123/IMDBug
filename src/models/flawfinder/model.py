@@ -31,9 +31,9 @@ class FlawFinderModel(BaseModel):
             if not len(prediction[0]):
                 all_line_scores.append([])
             else:
-                curr_line_scores = [0] * max(prediction[0], key=lambda x: x["line"])
+                curr_line_scores = [""] * (int(max(prediction[0], key=lambda x: int(x["line"]))["line"]))
                 for line_score in prediction[0]:
-                    curr_line_scores[line_score["line"]] = 1
+                    curr_line_scores[int(line_score["line"]) - 1] = line_score["description"]
                 all_line_scores.append(curr_line_scores)
 
         return all_line_scores, y_pred, y_pred

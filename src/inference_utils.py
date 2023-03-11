@@ -45,25 +45,39 @@ def get_colors(all_line_scores, start_indices, y_preds, y_probs):
                 "severity": 0,
                 "text": f"This function has a {round(float(y_prob) * 100, 2)}% of being exploitable"
             })
-            line_code_colors: List[Dict[str, Any]] = [
-                {
-                    "line_index": start_idx + line_idx,
-                    "probability": float(line_score)
-                }
-                for line_idx, line_score in enumerate(line_scores)
-            ]
 
-            # Remove first line since it will already be colored from the function
-            line_code_colors = line_code_colors[1:]
+            if len(line_scores) == 0:
+                continue
+            elif type(line_scores[0]) == str:
+                line_code_colors: List[Dict[str, Any]] = [
+                    {
+                        "line_index": start_idx + line_idx,
+                        "severity": 0,
+                        "text": line_score
+                    }
+                    for line_idx, line_score in enumerate(line_scores)
+                    if line_score != ""
+                ]
+            else:
+                line_code_colors: List[Dict[str, Any]] = [
+                    {
+                        "line_index": start_idx + line_idx,
+                        "probability": float(line_score)
+                    }
+                    for line_idx, line_score in enumerate(line_scores)
+                ]
 
-            # Normalize line code scores to actual probabilities
-            if len(line_scores):
-                min_score = min(line_scores)
-                max_score = max(line_scores)
-                for line_code in line_code_colors:
-                    line_code["probability"] = (line_code["probability"] - min_score) / (max_score - min_score)
-                    line_code["text"] = f"This line has a {round(float(line_code['probability']) * 100, 2)}% " \
-                                        f"chance of being the reason for this"
+                # Remove first line since it will already be colored from the function
+                line_code_colors = line_code_colors[1:]
+
+                # Normalize line code scores to actual probabilities
+                if len(line_scores):
+                    min_score = min(line_scores)
+                    max_score = max(line_scores)
+                    for line_code in line_code_colors:
+                        line_code["probability"] = (line_code["probability"] - min_score) / (max_score - min_score)
+                        line_code["text"] = f"This line has a {round(float(line_code['probability']) * 100, 2)}% " \
+                                            f"chance of being the reason for this"
 
             # Add to line code colors
             colors += line_code_colors

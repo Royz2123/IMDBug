@@ -2338,7 +2338,6 @@ def save_if_desired():
         f.close()
 
 
-from IPython import get_ipython
 
 
 
