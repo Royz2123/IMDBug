@@ -2205,6 +2205,31 @@ def process_options(code, extension):
     global show_columns, never_ignore, quiet, showheading, list_rules
     global loadhitlist, savehitlist, diffhitlist_filename
     global patch_file
+    show_context = None
+    show_inputs = None
+    allowlink = None
+    skipdotdir = None
+    omit_time = None
+    output_format = None
+    minimum_level = None
+    show_immediately = None
+    single_line = None
+    csv_output = None
+    csv_writer = None
+    sarif_output = None
+    error_level = None
+    required_regex = None
+    required_regex_compiled = None
+    falsepositive = None
+    show_columns = None
+    never_ignore = None
+    quiet = None
+    showheading = None
+    list_rules = None
+    loadhitlist = None
+    savehitlist = None
+    diffhitlist_filename = None
+    patch_file = None
 
 
 def process_files(code, extension):
@@ -2346,5 +2371,3 @@ def flawfind(code, extension):
         return all_line_scores, y_pred, y_pred
     else:
         print("Error")
-
-
