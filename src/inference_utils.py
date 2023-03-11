@@ -12,9 +12,9 @@ class CodeInput(BaseModel):
 
 
 def prob_to_severity(prob: float) -> Union[int, None]:
-    if 0.9 < prob <= 1.0:
+    if 0.8 < prob <= 1.0:
         return 0
-    elif 0.7 < prob <= 0.9:
+    elif 0.5 < prob <= 0.8:
         return 1
     else:
         return None
@@ -33,12 +33,16 @@ def get_filtered_colors(colors):
 
 
 def get_colors(all_line_scores, start_indices, y_preds, y_probs):
+    # Set default line scores if not provided
+    if all_line_scores is None:
+        all_line_scores = [[]] * len(y_preds)
+
     colors = list()
     for start_idx, y_pred, y_prob, line_scores in zip(start_indices, y_preds, y_probs, all_line_scores):
         if y_pred:
             colors.append({
                 "line_index": start_idx,
-                "probability": float(y_prob),
+                "severity": 0,
                 "text": f"This function has a {round(float(y_prob) * 100, 2)}% of being exploitable"
             })
             line_code_colors: List[Dict[str, Any]] = [

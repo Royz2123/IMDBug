@@ -1,6 +1,6 @@
-from transformers import pipeline, AutoTokenizer, BertTokenizer
-import torch
 import numpy
+import torch
+from transformers import pipeline, AutoTokenizer, BertTokenizer
 
 
 class TextClassificationModel(object):
@@ -17,6 +17,7 @@ class TextClassificationModel(object):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         return pipeline("text-classification",
                         model=self.model_location,
+                        tokenizer=self.model_location,
                         return_all_scores=True, device=device)
 
     def inference_old(self, model, tokenizer, texts: list):

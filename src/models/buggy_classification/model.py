@@ -1,10 +1,14 @@
+import os.path
 from typing import List, Tuple
 
-from src.models.base_model import BaseModel
+from models.base_model import BaseModel
+from models.buggy_classification.base_model import TextClassificationModel
 
-from base_model import TextClassificationModel
-
-MODEL_LOCATION = "codebert-base-buggy-token-classification"
+MODEL_LOCATION = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "saved_models",
+    "codebert-base-buggy-token-classification"
+)
 
 
 class Buggy(TextClassificationModel):
@@ -23,7 +27,8 @@ class BuggyModel(BaseModel):
     def load_model(self):
         self.model = self.buggy_object.get_model()
 
-    def infer(self, funcs: List[str], file_type: str = None) -> Tuple[List, List, List]:
-        score = self.buggy_object.inference(self.model, funcs)
-
-        # return all_line_scores, y_pred, y_pred
+    def infer(self, funcs: List[str], file_type: str = None) -> Tuple[List[List] or None, List, List]:
+        self.validate_load()
+        all_line_scores, y_pred, y_prob = self.buggy_object.inference(self.model, funcs)
+        y_pred, y_prob = BuggyModel.convert_format(y_pred, y_prob)
+        return None, y_pred, y_prob

@@ -28,5 +28,11 @@ class BaseModel(object):
     def load_model(self) -> None:
         raise NotImplementedError("Method load_model is not implemented")
 
-    def infer(self, funcs: List[str], file_type: str = None) -> Tuple[List, List, List]:
+    @staticmethod
+    def convert_format(y_pred: List, y_prob: List) -> Tuple[List, List]:
+        y_pred = [1 if pred["label"] == "LABEL_1" else 0 for pred in y_pred]
+        y_prob = [prob["score"] if prob["label"] == "LABEL_1" else 1 - prob["score"] for prob in y_prob]
+        return y_pred, y_prob
+
+    def infer(self, funcs: List[str], file_type: str = None) -> Tuple[List[List] or None, List, List]:
         raise NotImplementedError("Method infer is not implemented")

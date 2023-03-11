@@ -1,6 +1,6 @@
-from transformers import pipeline, AutoTokenizer, BertTokenizer
-import torch
 import numpy
+import torch
+from transformers import pipeline, AutoTokenizer, BertTokenizer
 
 
 class TextClassificationModel(object):

@@ -1,6 +1,6 @@
-from transformers import pipeline, AutoTokenizer, BertTokenizer
-import torch
 import numpy
+import torch
+from transformers import pipeline, AutoTokenizer, BertTokenizer
 
 
 class TextClassificationModel(object):
@@ -33,4 +33,5 @@ class TextClassificationModel(object):
 
     def inference(self, model, texts: list):
         y_preds = model(texts)
+        y_preds = [max(pred, key=lambda x: x["score"]) for pred in y_preds]
         return [], y_preds, y_preds

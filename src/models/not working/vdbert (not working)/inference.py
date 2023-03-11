@@ -1,15 +1,15 @@
-from src.models.code_bert.base_model import TextClassificationModel
+from base_model import TextClassificationModel
 
-MODEL_LOCATION = "codebert-base-buggy-token-classification"
+MODEL_LOCATION = "Vulnerability-detection"
 
 
-class Buggy(TextClassificationModel):
+class VulnerabilityDetection(TextClassificationModel):
     def __init__(self):
         super().__init__(MODEL_LOCATION)
 
 
 if __name__ == '__main__':
-    v = Buggy()
+    v = VulnerabilityDetection()
     model = v.get_model()
     code = """// A C program to demonstrate buffer overflow
     #include <stdio.h>

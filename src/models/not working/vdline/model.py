@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
-from src.models.base_model import BaseModel
-from src.models.vdline.inference import inference
+from models.base_model import BaseModel
+from models.vdline.inference import inference
 
 
 class VDLineModel(BaseModel):
