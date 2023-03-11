@@ -1,20 +1,17 @@
 from __future__ import absolute_import, division, print_function
 
+import glob
 import logging
 import os
+from importlib import __import__
 
 import uvicorn
 from fastapi import FastAPI
 
-from common.log_util import LogHTTPException, setup_logging, CustomFormatter, pretty_log, TITLE_LEVEL
+from common.log_util import LogHTTPException, setup_logging, pretty_log, TITLE_LEVEL
 from file_to_funcs.file_to_funcs import convert_file_to_funcs
 from inference_utils import CodeInput, get_filtered_colors, get_colors
 from models.base_model import BaseModel
-from models.linevul.imdbug_main import predict_on_function
-from models.linevul.linvul_api_utils import get_linveul_args, get_linevul_model
-from models.vulberta.inference_utils import get_vulberta_args, get_vulberta_model, infer
-import glob
-from importlib import __import__
 
 app = FastAPI()
 setup_logging()
