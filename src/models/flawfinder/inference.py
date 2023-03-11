@@ -1,4 +1,4 @@
-from models.flawfinder.flawfinder import flawfind
+from src.models.flawfinder.flawfinder import flawfind
 
 
 def inference(codes, extension):
@@ -35,9 +35,10 @@ if __name__ == '__main__':
     
            return 0;
     }"""
-    codes = [code]
+    codes = [code,code,code]
     extensions = ".c"
-    all_line_scores, y_preds, y_probs = inference(codes, extensions)[0]
-    print(all_line_scores)
+    all_line_scores, y_preds, y_probs = inference(codes, extensions)[2]
+    for i in all_line_scores:
+        print(i)
     print(y_preds)
     print(y_probs)

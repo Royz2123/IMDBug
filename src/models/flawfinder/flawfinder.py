@@ -2205,31 +2205,7 @@ def process_options(code, extension):
     global show_columns, never_ignore, quiet, showheading, list_rules
     global loadhitlist, savehitlist, diffhitlist_filename
     global patch_file
-    show_context = None
-    show_inputs = None
-    allowlink = None
-    skipdotdir = None
-    omit_time = None
-    output_format = None
-    minimum_level = None
-    show_immediately = None
-    single_line = None
-    csv_output = None
-    csv_writer = None
-    sarif_output = None
-    error_level = None
-    required_regex = None
-    required_regex_compiled = None
-    falsepositive = None
-    show_columns = None
-    never_ignore = None
-    quiet = None
-    showheading = None
-    list_rules = None
-    loadhitlist = None
-    savehitlist = None
-    diffhitlist_filename = None
-    patch_file = None
+    hitlist = []
 
 
 def process_files(code, extension):
@@ -2362,12 +2338,48 @@ def save_if_desired():
         f.close()
 
 
+from IPython import get_ipython
+
+
+
+def delete_var():
+    pass
+    # del show_context
+    # del show_inputs
+    # del allowlink
+    # del skipdotdir
+    # del omit_time
+    # del output_format
+    # del minimum_level
+    # del show_immediately
+    # del single_line
+    # del csv_output
+    # del csv_writer
+    # del sarif_output
+    # del error_level
+    # del required_regex
+    # del required_regex_compiled
+    # del falsepositive
+    # del show_columns
+    # del never_ignore
+    # del quiet
+    # del showheading
+    # del list_rules
+    # del loadhitlist
+    # del savehitlist
+    # del diffhitlist_filename
+    # del patch_file
+
+
 def flawfind(code, extension):
     process_options(code, extension)
     initialize_ruleset()
     if process_files(code, extension):
         all_line_scores, y_pred = show_final_results()
         save_if_desired()
+        global hitlist
+        hitlist = []
+        # delete_var()
         return all_line_scores, y_pred, y_pred
     else:
         print("Error")
