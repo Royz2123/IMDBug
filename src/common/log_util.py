@@ -12,9 +12,9 @@ class LogHTTPException(HTTPException):
 
 
 class CustomFormatter(logging.Formatter):
-    grey = '\x1b[38;20m'
-    white = '\x1b[20m'
-    white_underline = '\x1b[21m'
+    grey = "\x1b[38;20m"
+    white = "\x1b[20m"
+    white_underline = "\x1b[21m"
     yellow = "\x1b[33;20m"
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
@@ -27,7 +27,7 @@ class CustomFormatter(logging.Formatter):
         TITLE_LEVEL: white_underline + format + reset,
         logging.WARNING: yellow + format + reset,
         logging.ERROR: red + format + reset,
-        logging.CRITICAL: bold_red + format + reset
+        logging.CRITICAL: bold_red + format + reset,
     }
 
     def __init__(self):
@@ -64,7 +64,6 @@ def setup_logging() -> None:
             logger.addHandler(ch)
 
     logging.addLevelName(TITLE_LEVEL, "TITLE")
-
 
 
 if __name__ == "__main__":

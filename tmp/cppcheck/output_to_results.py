@@ -1,4 +1,4 @@
-import pandas as pd 
+import pandas as pd
 
 results = []
 
@@ -12,7 +12,7 @@ for k in range(628):
     for i in range(len(lines)):
         if f"data/c_files/{k}.cpp" in lines[i] and "syntaxError" in lines[i]:
             line_info += lines[i].strip("\n")
-            line_info += lines[i+1]
+            line_info += lines[i + 1]
         elif f"data/c_files/{k}.cpp" in lines[i]:
             line_info += lines[i]
     results.append(line_info)

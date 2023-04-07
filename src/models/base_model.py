@@ -13,10 +13,7 @@ class BaseModel(object):
 
     @classmethod
     def get_model_options(cls) -> Dict[str, str]:
-        return {
-            "label": cls.MODEL_LABEL,
-            "detail": cls.MODEL_DETAIL
-        }
+        return {"label": cls.MODEL_LABEL, "detail": cls.MODEL_DETAIL}
 
     def validate_load(self) -> None:
         if not self.loaded:
@@ -31,8 +28,13 @@ class BaseModel(object):
     @staticmethod
     def convert_format(y_pred: List, y_prob: List) -> Tuple[List, List]:
         y_pred = [1 if pred["label"] == "LABEL_1" else 0 for pred in y_pred]
-        y_prob = [prob["score"] if prob["label"] == "LABEL_1" else 1 - prob["score"] for prob in y_prob]
+        y_prob = [
+            prob["score"] if prob["label"] == "LABEL_1" else 1 - prob["score"]
+            for prob in y_prob
+        ]
         return y_pred, y_prob
 
-    def infer(self, funcs: List[str], file_type: str = None) -> Tuple[List[List] or None, List, List]:
+    def infer(
+        self, funcs: List[str], file_type: str = None
+    ) -> Tuple[List[List] or None, List, List]:
         raise NotImplementedError("Method infer is not implemented")

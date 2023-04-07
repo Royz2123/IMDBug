@@ -8,7 +8,7 @@ class CodeBert(TextClassificationModel):
         super().__init__(MODEL_LOCATION)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     v = CodeBert()
     model = v.get_model()
     code = """// A C program to demonstrate buffer overflow

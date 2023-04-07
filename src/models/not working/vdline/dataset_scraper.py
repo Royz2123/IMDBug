@@ -13,8 +13,10 @@ import os
 import pandas as pd
 from os.path import join as pathjoin
 import src.configs as configs
+
 # from prepare.cpg_generator import joern_parse
 import subprocess
+
 PATHS = configs.Paths()
 DATA = configs.Data()
 CB_PROJECTS = DATA.projects
@@ -45,13 +47,15 @@ def produce_df():
         return
     # ds = pd.DataFrame(columns=["project", "commit", "target", "function_name", "function"])
     ds = []
-    _commit_no = 0     # How the dataframe is codified
+    _commit_no = 0  # How the dataframe is codified
     _rest_no = 1
     for p in CB_PROJECTS.keys():
         vuln_lines = pd.read_pickle(f"{RAW_DIR}{p}/vulnerable_lines.pkl")
         for r in vuln_lines.iterrows():
             _commit = r[_commit_no]
-            _rest = r[_rest_no]    # at this point, the keys are function_name, file_path, line_no and line
+            _rest = r[
+                _rest_no
+            ]  # at this point, the keys are function_name, file_path, line_no and line
             _project = p
             _name = _rest["function_name"]
             _target = _rest["line_no"]
@@ -59,16 +63,24 @@ def produce_df():
             if type(_line) is not str:
                 logging.warning(f"Record skip: {p} {_commit} {_name} {_target}")
                 continue
-            if _line[0] == '+' or _line[0] == '-':  # remove leading - or +
+            if _line[0] == "+" or _line[0] == "-":  # remove leading - or +
                 _line = _line[1:].lstrip()
             _file = f"{RAW_DIR}{p}/functions/{_name}--{_commit}.c"
             if not os.path.exists(_file):
                 logging.warning(f"File {_file} does not exits. Continue")
                 continue
             with open(_file) as f:
-                _function = "". join(f.readlines())   # read lines, non-ASCII char can be a problem
-            this = {"project": _project, "commit": _commit, "target": _target, "function_name": _name,
-                    "line": _line, "function": _function}
+                _function = "".join(
+                    f.readlines()
+                )  # read lines, non-ASCII char can be a problem
+            this = {
+                "project": _project,
+                "commit": _commit,
+                "target": _target,
+                "function_name": _name,
+                "line": _line,
+                "function": _function,
+            }
             ds.append(this)
         logging.info(f"Finish  reading project {p}")
     logging.info(f"Finish dataset production.")
@@ -80,7 +92,7 @@ def produce_df():
 
 
 def _dict_file_path(data: dict):
-    files = data['data']
+    files = data["data"]
     if not files:
         logging.warning("No data, skip")
         return
@@ -119,7 +131,7 @@ def _dict_line(data: dict, file_path, function, line_no):
 
 
 def _dict_commit(data: dict, file_path, function, line_no, line):
-    commit = data['commit']
+    commit = data["commit"]
     url_src = f"https://raw.githubusercontent.com/{PROJECT}/{commit}/{file_path}"
 
     _file_paths.append(file_path)
@@ -145,10 +157,12 @@ def _request_url_write(function, commit, file_path):
         if len(source_code.content) < FOUND_404_STR:
             logging.error("Found 404, file not written")
             return
-        with open(to_write, 'wb') as fh:
+        with open(to_write, "wb") as fh:
             fh.write(source_code.content)
     except requests.exceptions.RequestException as e:
-        logging.error(f"An exception was raise while getting the file {_file_paths}. Continue.")
+        logging.error(
+            f"An exception was raise while getting the file {_file_paths}. Continue."
+        )
     return
 
 
@@ -170,32 +184,48 @@ def scrape_dataset(project_to_scrape):
     if not PROJECT:
         print("[Error] Project not found, check source parameter. Exit.")
         sys.exit(1)
-    logging.basicConfig(level=logging.INFO, filename=log_filename, filemode='w+',
-                        format='[%(levelname)s] - %(message)s')
+    logging.basicConfig(
+        level=logging.INFO,
+        filename=log_filename,
+        filemode="w+",
+        format="[%(levelname)s] - %(message)s",
+    )
     logging.info(
-        f"{str(datetime.now())[0:-5]} --------------------------------------------------------------------------------")
+        f"{str(datetime.now())[0:-5]} --------------------------------------------------------------------------------"
+    )
     logging.info(f"Extracting source file from {PROJECT}")
     if not os.path.exists(DEST):
         logging.info(f"Destination dir does not exists. Creating {DEST}")
         os.mkdir(DEST)
     proj_vl = pathjoin(PATHS.raw, project_to_scrape, "vulnerable_lines.json")
-    with open(proj_vl, 'r') as src:
+    with open(proj_vl, "r") as src:
         logging.info(f"Reading {proj_vl} file")
         ds = json.load(src)
     for key in ds.keys():
         _dict_file_path(ds[key])  # this line is the one that does the hard work
         logging.info("Next...")
-    logging.info(f"SUMMARY:\n\tfiles {len(_file_paths)}, functions {len(_functions)}, commits {len(_commits)},"
-                 f" line_no. {len(_line_nos)}, lines {len(_lines)}")
-    DATASET = pd.DataFrame.from_dict({"function_name": _functions, "file_path": _file_paths, "commit": _commits,
-                                      "line_no": _line_nos, "line": _lines})
-    DATASET = DATASET.set_index('commit')
+    logging.info(
+        f"SUMMARY:\n\tfiles {len(_file_paths)}, functions {len(_functions)}, commits {len(_commits)},"
+        f" line_no. {len(_line_nos)}, lines {len(_lines)}"
+    )
+    DATASET = pd.DataFrame.from_dict(
+        {
+            "function_name": _functions,
+            "file_path": _file_paths,
+            "commit": _commits,
+            "line_no": _line_nos,
+            "line": _lines,
+        }
+    )
+    DATASET = DATASET.set_index("commit")
     DATASET.to_pickle(pathjoin(PATHS.raw, f"{project_to_scrape}/vulnerable_lines.pkl"))
-    logging.info(f"Pickle written successfully. Exiting at time {str(datetime.now())[0:-5]}")
+    logging.info(
+        f"Pickle written successfully. Exiting at time {str(datetime.now())[0:-5]}"
+    )
     return
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.basicConfig(filename="scrapper.log", level=logging.INFO)
     logging.critical(f"---> Start execution {__file__}")
     # scrape_dataset("data/raw/openssl")

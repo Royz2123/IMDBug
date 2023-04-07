@@ -19,5 +19,3 @@ class LineVulModel(BaseModel):
     def infer(self, funcs: List[str], file_type: str = None) -> Tuple[List, List, List]:
         self.validate_load()
         return predict_on_function(self.args, funcs, self.model, self.tokenizer)
-
-

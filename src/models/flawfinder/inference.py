@@ -7,7 +7,7 @@ def inference(codes, extension):
     return all_predictions
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     code = """// A C program to demonstrate buffer overflow
     #include <stdio.h>
     #include <string.h>
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     
            return 0;
     }"""
-    codes = [code,code,code]
+    codes = [code, code, code]
     extensions = ".c"
     all_line_scores, y_preds, y_probs = inference(codes, extensions)[2]
     for i in all_line_scores:

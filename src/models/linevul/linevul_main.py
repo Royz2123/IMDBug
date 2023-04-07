@@ -27,14 +27,25 @@ from typing import List
 import numpy as np
 import pandas as pd
 import torch
-from captum.attr import LayerIntegratedGradients, DeepLift, DeepLiftShap, GradientShap, Saliency
+from captum.attr import (
+    LayerIntegratedGradients,
+    DeepLift,
+    DeepLiftShap,
+    GradientShap,
+    Saliency,
+)
 from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score
 from sklearn.metrics import auc
 from tokenizers import Tokenizer
 from torch.utils.data import DataLoader, Dataset, SequentialSampler, RandomSampler
 from tqdm import tqdm
-from transformers import (AdamW, get_linear_schedule_with_warmup,
-                          RobertaConfig, RobertaForSequenceClassification, RobertaTokenizer)
+from transformers import (
+    AdamW,
+    get_linear_schedule_with_warmup,
+    RobertaConfig,
+    RobertaForSequenceClassification,
+    RobertaTokenizer,
+)
 
 from models.linevul.linevul_model import Model
 
@@ -53,17 +64,16 @@ logger = logging.getLogger(__name__)
 class InputFeatures(object):
     """A single training/test features for a example."""
 
-    def __init__(self,
-                 input_tokens,
-                 input_ids,
-                 label):
+    def __init__(self, input_tokens, input_ids, label):
         self.input_tokens = input_tokens
         self.input_ids = input_ids
         self.label = label
 
 
 class TextDataset(Dataset):
-    def __init__(self, tokenizer, args, file_type: str = "train", funcs: List[str] = None):
+    def __init__(
+        self, tokenizer, args, file_type: str = "train", funcs: List[str] = None
+    ):
         self.file_type = file_type
         if file_type == "infer":
             # In this case we don't have label, so we'll just make them up
@@ -84,21 +94,31 @@ class TextDataset(Dataset):
         # Create examples from functions and labels
         self.examples = []
         for i in range(len(funcs)):
-            self.examples.append(convert_examples_to_features(funcs[i], labels[i], tokenizer, args))
+            self.examples.append(
+                convert_examples_to_features(funcs[i], labels[i], tokenizer, args)
+            )
 
         # Print more stuff for train
         if file_type == "train":
             for example in self.examples[:3]:
                 logging.info("\t\t*** Example ***")
                 logging.info("\t\t\tLabel: {}".format(example.label))
-                logging.info("\t\t\tInput_tokens: {}".format([x.replace('\u0120', '_') for x in example.input_tokens]))
-                logging.info("\t\t\tInput_ids: {}".format(' '.join(map(str, example.input_ids))))
+                logging.info(
+                    "\t\t\tInput_tokens: {}".format(
+                        [x.replace("\u0120", "_") for x in example.input_tokens]
+                    )
+                )
+                logging.info(
+                    "\t\t\tInput_ids: {}".format(" ".join(map(str, example.input_ids)))
+                )
 
     def __len__(self):
         return len(self.examples)
 
     def __getitem__(self, i):
-        return torch.tensor(self.examples[i].input_ids), torch.tensor(self.examples[i].label)
+        return torch.tensor(self.examples[i].input_ids), torch.tensor(
+            self.examples[i].label
+        )
 
 
 def convert_examples_to_features(func, label, tokenizer, args):
@@ -117,7 +137,7 @@ def convert_examples_to_features(func, label, tokenizer, args):
         source_tokens = []
         return InputFeatures(source_tokens, source_ids, label)
     # source
-    code_tokens = tokenizer.tokenize(str(func))[:args.block_size - 2]
+    code_tokens = tokenizer.tokenize(str(func))[: args.block_size - 2]
     source_tokens = [tokenizer.cls_token] + code_tokens + [tokenizer.sep_token]
     source_ids = tokenizer.convert_tokens_to_ids(source_tokens)
     padding_length = args.block_size - len(source_ids)
@@ -134,10 +154,15 @@ def set_seed(args):
 
 
 def train(args, train_dataset, model, tokenizer, eval_dataset):
-    """ Train the model """
+    """Train the model"""
     # build dataloader
     train_sampler = RandomSampler(train_dataset)
-    train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.train_batch_size, num_workers=0)
+    train_dataloader = DataLoader(
+        train_dataset,
+        sampler=train_sampler,
+        batch_size=args.train_batch_size,
+        num_workers=0,
+    )
 
     args.max_steps = args.epochs * len(train_dataloader)
     # evaluate the model per epoch
@@ -146,15 +171,31 @@ def train(args, train_dataset, model, tokenizer, eval_dataset):
     model.to(args.device)
 
     # Prepare optimizer and schedule (linear warmup and decay)
-    no_decay = ['bias', 'LayerNorm.weight']
+    no_decay = ["bias", "LayerNorm.weight"]
     optimizer_grouped_parameters = [
-        {'params': [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
-         'weight_decay': args.weight_decay},
-        {'params': [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
+        {
+            "params": [
+                p
+                for n, p in model.named_parameters()
+                if not any(nd in n for nd in no_decay)
+            ],
+            "weight_decay": args.weight_decay,
+        },
+        {
+            "params": [
+                p
+                for n, p in model.named_parameters()
+                if any(nd in n for nd in no_decay)
+            ],
+            "weight_decay": 0.0,
+        },
     ]
-    optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, eps=args.adam_epsilon)
-    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=args.warmup_steps,
-                                                num_training_steps=args.max_steps)
+    optimizer = AdamW(
+        optimizer_grouped_parameters, lr=args.learning_rate, eps=args.adam_epsilon
+    )
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer, num_warmup_steps=args.warmup_steps, num_training_steps=args.max_steps
+    )
 
     # multi-gpu training
     if args.n_gpu > 1:
@@ -164,8 +205,14 @@ def train(args, train_dataset, model, tokenizer, eval_dataset):
     logger.info("***** Running training *****")
     logger.info("  Num examples = %d", len(train_dataset))
     logger.info("  Num Epochs = %d", args.epochs)
-    logger.info("  Instantaneous batch size per GPU = %d", args.train_batch_size // max(args.n_gpu, 1))
-    logger.info("  Total train batch size = %d", args.train_batch_size * args.gradient_accumulation_steps)
+    logger.info(
+        "  Instantaneous batch size per GPU = %d",
+        args.train_batch_size // max(args.n_gpu, 1),
+    )
+    logger.info(
+        "  Total train batch size = %d",
+        args.train_batch_size * args.gradient_accumulation_steps,
+    )
     logger.info("  Gradient Accumulation steps = %d", args.gradient_accumulation_steps)
     logger.info("  Total optimization steps = %d", args.max_steps)
 
@@ -206,24 +253,34 @@ def train(args, train_dataset, model, tokenizer, eval_dataset):
                 scheduler.step()
                 global_step += 1
                 output_flag = True
-                avg_loss = round(np.exp((tr_loss - logging_loss) / (global_step - tr_nb)), 4)
+                avg_loss = round(
+                    np.exp((tr_loss - logging_loss) / (global_step - tr_nb)), 4
+                )
 
                 if global_step % args.save_steps == 0:
-                    results = evaluate(args, model, tokenizer, eval_dataset, eval_when_training=True)
+                    results = evaluate(
+                        args, model, tokenizer, eval_dataset, eval_when_training=True
+                    )
 
                     # Save model checkpoint
-                    if results['eval_f1'] > best_f1:
-                        best_f1 = results['eval_f1']
+                    if results["eval_f1"] > best_f1:
+                        best_f1 = results["eval_f1"]
                         logger.info("  " + "*" * 20)
                         logger.info("  Best f1:%s", round(best_f1, 4))
                         logger.info("  " + "*" * 20)
 
-                        checkpoint_prefix = 'checkpoint-best-f1'
-                        output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix))
+                        checkpoint_prefix = "checkpoint-best-f1"
+                        output_dir = os.path.join(
+                            args.output_dir, "{}".format(checkpoint_prefix)
+                        )
                         if not os.path.exists(output_dir):
                             os.makedirs(output_dir)
-                        model_to_save = model.module if hasattr(model, 'module') else model
-                        output_dir = os.path.join(output_dir, '{}'.format(args.model_name))
+                        model_to_save = (
+                            model.module if hasattr(model, "module") else model
+                        )
+                        output_dir = os.path.join(
+                            output_dir, "{}".format(args.model_name)
+                        )
                         torch.save(model_to_save.state_dict(), output_dir)
                         logger.info("Saving model checkpoint to %s", output_dir)
 
@@ -231,7 +288,12 @@ def train(args, train_dataset, model, tokenizer, eval_dataset):
 def evaluate(args, model, tokenizer, eval_dataset, eval_when_training=False):
     # build dataloader
     eval_sampler = SequentialSampler(eval_dataset)
-    eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=args.eval_batch_size, num_workers=0)
+    eval_dataloader = DataLoader(
+        eval_dataset,
+        sampler=eval_sampler,
+        batch_size=args.eval_batch_size,
+        num_workers=0,
+    )
 
     # multi-gpu evaluate
     if args.n_gpu > 1 and eval_when_training is False:
@@ -282,7 +344,12 @@ def evaluate(args, model, tokenizer, eval_dataset, eval_when_training=False):
 def imdbug_test(args, model, tokenizer, test_dataset, best_threshold=0.5):
     # build dataloader
     test_sampler = SequentialSampler(test_dataset)
-    test_dataloader = DataLoader(test_dataset, sampler=test_sampler, batch_size=args.eval_batch_size, num_workers=0)
+    test_dataloader = DataLoader(
+        test_dataset,
+        sampler=test_sampler,
+        batch_size=args.eval_batch_size,
+        num_workers=0,
+    )
 
     # Create model
     if args.n_gpu > 1:
@@ -330,7 +397,12 @@ def imdbug_test(args, model, tokenizer, test_dataset, best_threshold=0.5):
 def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
     # build dataloader
     test_sampler = SequentialSampler(test_dataset)
-    test_dataloader = DataLoader(test_dataset, sampler=test_sampler, batch_size=args.eval_batch_size, num_workers=0)
+    test_dataloader = DataLoader(
+        test_dataset,
+        sampler=test_sampler,
+        batch_size=args.eval_batch_size,
+        num_workers=0,
+    )
 
     # multi-gpu evaluate
     if args.n_gpu > 1:
@@ -383,7 +455,14 @@ def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
 
     # define reasoning method
     if args.reasoning_method == "all":
-        all_reasoning_method = ["attention", "lig", "saliency", "deeplift", "deeplift_shap", "gradient_shap"]
+        all_reasoning_method = [
+            "attention",
+            "lig",
+            "saliency",
+            "deeplift",
+            "deeplift_shap",
+            "gradient_shap",
+        ]
     else:
         all_reasoning_method = [args.reasoning_method]
 
@@ -391,7 +470,9 @@ def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
         # (RQ2) Effort@TopK%Recall & Recall@TopK%LOC for the whole test set
         # flatten the logits
         for reasoning_method in all_reasoning_method:
-            dataloader = DataLoader(test_dataset, sampler=test_sampler, batch_size=1, num_workers=0)
+            dataloader = DataLoader(
+                test_dataset, sampler=test_sampler, batch_size=1, num_workers=0
+            )
             progress_bar = tqdm(dataloader, total=len(dataloader))
             all_pos_score_label = []
             all_neg_score_label = []
@@ -401,46 +482,64 @@ def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
                 # if predicted as vulnerable
                 if result_df["logits"][index] > 0.5:
                     total_pred_as_vul += 1
-                    all_lines_score_with_label = \
-                        line_level_localization(flaw_lines=result_df["flaw_line"][index],
-                                                tokenizer=tokenizer,
-                                                model=model,
-                                                mini_batch=mini_batch,
-                                                original_func=result_df["processed_func"][index],
-                                                args=args,
-                                                top_k_loc=None,
-                                                top_k_constant=None,
-                                                reasoning_method=reasoning_method,
-                                                index=index)
+                    all_lines_score_with_label = line_level_localization(
+                        flaw_lines=result_df["flaw_line"][index],
+                        tokenizer=tokenizer,
+                        model=model,
+                        mini_batch=mini_batch,
+                        original_func=result_df["processed_func"][index],
+                        args=args,
+                        top_k_loc=None,
+                        top_k_constant=None,
+                        reasoning_method=reasoning_method,
+                        index=index,
+                    )
                     all_pos_score_label.append(all_lines_score_with_label)
                 # else predicted as non vulnerable
                 else:
-                    all_lines_score_with_label = \
-                        line_level_localization(flaw_lines=result_df["flaw_line"][index],
-                                                tokenizer=tokenizer,
-                                                model=model,
-                                                mini_batch=mini_batch,
-                                                original_func=result_df["processed_func"][index],
-                                                args=args,
-                                                top_k_loc=None,
-                                                top_k_constant=None,
-                                                reasoning_method=reasoning_method,
-                                                index=index)
+                    all_lines_score_with_label = line_level_localization(
+                        flaw_lines=result_df["flaw_line"][index],
+                        tokenizer=tokenizer,
+                        model=model,
+                        mini_batch=mini_batch,
+                        original_func=result_df["processed_func"][index],
+                        args=args,
+                        top_k_loc=None,
+                        top_k_constant=None,
+                        reasoning_method=reasoning_method,
+                        index=index,
+                    )
                     all_neg_score_label.append(all_lines_score_with_label)
                 index += 1
             is_attention = True if reasoning_method == "attention" else False
-            total_pos_lines, pos_rank_df = rank_lines(all_pos_score_label, is_attention, ascending_ranking=False)
+            total_pos_lines, pos_rank_df = rank_lines(
+                all_pos_score_label, is_attention, ascending_ranking=False
+            )
 
             if is_attention:
-                total_neg_lines, neg_rank_df = rank_lines(all_neg_score_label, is_attention, ascending_ranking=True)
+                total_neg_lines, neg_rank_df = rank_lines(
+                    all_neg_score_label, is_attention, ascending_ranking=True
+                )
             else:
-                total_neg_lines, neg_rank_df = rank_lines(all_neg_score_label, is_attention, ascending_ranking=False)
+                total_neg_lines, neg_rank_df = rank_lines(
+                    all_neg_score_label, is_attention, ascending_ranking=False
+                )
 
-            effort, inspected_line = top_k_effort(pos_rank_df, sum_lines, sum_flaw_lines, args.effort_at_top_k)
+            effort, inspected_line = top_k_effort(
+                pos_rank_df, sum_lines, sum_flaw_lines, args.effort_at_top_k
+            )
 
-            recall_value = top_k_recall(pos_rank_df, neg_rank_df, sum_lines, sum_flaw_lines, args.top_k_recall_by_lines)
+            recall_value = top_k_recall(
+                pos_rank_df,
+                neg_rank_df,
+                sum_lines,
+                sum_flaw_lines,
+                args.top_k_recall_by_lines,
+            )
 
-            logging.info(f"\t\t\tTotal functions predicted as vulnerable: {total_pred_as_vul}")
+            logging.info(
+                f"\t\t\tTotal functions predicted as vulnerable: {total_pred_as_vul}"
+            )
 
             to_write = ""
 
@@ -456,14 +555,23 @@ def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
             logging.info(f"\t\t\tTotal flaw lines: {sum_flaw_lines}")
 
             vul_as_vul = sum(pos_rank_df["label"].tolist())
-            to_write += f"total flaw lines in predicted as vulnerable: {vul_as_vul}" + "\n"
-            logging.info(f"\t\t\tTotal flaw lines in predicted as vulnerable: {vul_as_vul}")
+            to_write += (
+                f"total flaw lines in predicted as vulnerable: {vul_as_vul}" + "\n"
+            )
+            logging.info(
+                f"\t\t\tTotal flaw lines in predicted as vulnerable: {vul_as_vul}"
+            )
 
             to_write += f"top{args.effort_at_top_k}-Effort: {effort}" + "\n"
             logger.info(f"top{args.effort_at_top_k}-Effort: {effort}")
 
-            to_write += f"total inspected line to find out {args.effort_at_top_k} of flaw lines: {inspected_line}" + "\n"
-            logger.info(f"total inspected line to find out {args.effort_at_top_k} of flaw lines: {inspected_line}")
+            to_write += (
+                f"total inspected line to find out {args.effort_at_top_k} of flaw lines: {inspected_line}"
+                + "\n"
+            )
+            logger.info(
+                f"total inspected line to find out {args.effort_at_top_k} of flaw lines: {inspected_line}"
+            )
 
             to_write += f"top{args.top_k_recall_by_lines}-Recall: {recall_value}" + "\n"
             logger.info(f"top{args.top_k_recall_by_lines}-Recall: {recall_value}")
@@ -473,15 +581,27 @@ def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
 
     if args.do_sorting_by_pred_prob:
         rank_df = rank_dataframe(df=result_df, rank_by="logits", ascending=False)
-        effort, inspected_line = top_k_effort_pred_prob(rank_df, sum_lines, sum_flaw_lines, args.effort_at_top_k,
-                                                        label_col_name="y_preds")
-        top_k_recall_val = top_k_recall_pred_prob(rank_df, sum_lines, sum_flaw_lines, args.top_k_recall_by_pred_prob,
-                                                  label_col_name="y_preds")
+        effort, inspected_line = top_k_effort_pred_prob(
+            rank_df,
+            sum_lines,
+            sum_flaw_lines,
+            args.effort_at_top_k,
+            label_col_name="y_preds",
+        )
+        top_k_recall_val = top_k_recall_pred_prob(
+            rank_df,
+            sum_lines,
+            sum_flaw_lines,
+            args.top_k_recall_by_pred_prob,
+            label_col_name="y_preds",
+        )
         with open("./results/rq2_result_pred_prob.txt", "a") as f:
             f.write(
-                f"\n Sorted By Prediction Probabilities \n top{args.effort_at_top_k}-Effort: {effort} \n top{args.top_k_recall_by_pred_prob}-Recall: {top_k_recall_val}")
+                f"\n Sorted By Prediction Probabilities \n top{args.effort_at_top_k}-Effort: {effort} \n top{args.top_k_recall_by_pred_prob}-Recall: {top_k_recall_val}"
+            )
             logger.info(
-                f"\n Sorted By Prediction Probabilities \n top{args.effort_at_top_k}-Effort: {effort} \n top{args.top_k_recall_by_pred_prob}-Recall: {top_k_recall_val}")
+                f"\n Sorted By Prediction Probabilities \n top{args.effort_at_top_k}-Effort: {effort} \n top{args.top_k_recall_by_pred_prob}-Recall: {top_k_recall_val}"
+            )
 
     # (RQ3) Line level evaluation for True Positive cases
     if args.do_local_explanation:
@@ -498,7 +618,9 @@ def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
 
             print("correct vulnerable count: ", len(tp_indices))
             # localization part
-            dataloader = DataLoader(test_dataset, sampler=test_sampler, batch_size=1, num_workers=0)
+            dataloader = DataLoader(
+                test_dataset, sampler=test_sampler, batch_size=1, num_workers=0
+            )
             # prepare data for line-level reasoning
             df = pd.read_csv(args.test_data_file)
             # stats for line-level evaluation
@@ -529,19 +651,22 @@ def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
                 if index in tp_indices:
                     # if flaw line exists
                     # if not exist, the data is as type of float (nan)
-                    if isinstance(df["flaw_line"][index], str) and isinstance(df["flaw_line_index"][index], str):
-                        line_eval_results = \
-                            line_level_localization_tp(flaw_lines=df["flaw_line"][index],
-                                                       tokenizer=tokenizer,
-                                                       model=model,
-                                                       mini_batch=mini_batch,
-                                                       original_func=df["processed_func"][index],
-                                                       args=args,
-                                                       top_k_loc=top_k_locs,
-                                                       top_k_constant=top_k_constant,
-                                                       reasoning_method=reasoning_method,
-                                                       index=index,
-                                                       write_invalid_data=True)
+                    if isinstance(df["flaw_line"][index], str) and isinstance(
+                        df["flaw_line_index"][index], str
+                    ):
+                        line_eval_results = line_level_localization_tp(
+                            flaw_lines=df["flaw_line"][index],
+                            tokenizer=tokenizer,
+                            model=model,
+                            mini_batch=mini_batch,
+                            original_func=df["processed_func"][index],
+                            args=args,
+                            top_k_loc=top_k_locs,
+                            top_k_constant=top_k_constant,
+                            reasoning_method=reasoning_method,
+                            index=index,
+                            write_invalid_data=True,
+                        )
                         if line_eval_results == "NA":
                             na_explanation_total += 1
                             na_eval_results_512 += 1
@@ -550,29 +675,49 @@ def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
                             sum_total_lines += line_eval_results["total_lines"]
                             total_flaw_lines += line_eval_results["num_of_flaw_lines"]
                             # IFA metric
-                            total_min_clean_lines_inspected += line_eval_results["min_clean_lines_inspected"]
+                            total_min_clean_lines_inspected += line_eval_results[
+                                "min_clean_lines_inspected"
+                            ]
 
                             # For IFA Boxplot
-                            ifa_records.append(line_eval_results["min_clean_lines_inspected"])
+                            ifa_records.append(
+                                line_eval_results["min_clean_lines_inspected"]
+                            )
 
                             # For Top-10 Acc Boxplot
                             # todo
                             # top_10_acc_records.append(line_eval_results[])
 
                             # All effort metric
-                            total_max_clean_lines_inspected += line_eval_results["max_clean_lines_inspected"]
+                            total_max_clean_lines_inspected += line_eval_results[
+                                "max_clean_lines_inspected"
+                            ]
                             for j in range(len(top_k_locs)):
-                                total_correctly_predicted_flaw_lines[j] += \
-                                    line_eval_results["all_correctly_predicted_flaw_lines"][j]
+                                total_correctly_predicted_flaw_lines[
+                                    j
+                                ] += line_eval_results[
+                                    "all_correctly_predicted_flaw_lines"
+                                ][
+                                    j
+                                ]
                             # top 10 accuracy
                             for k in range(len(top_k_constant)):
-                                total_correctly_localized_function[k] += \
-                                    line_eval_results["all_correctly_localized_function"][k]
+                                total_correctly_localized_function[
+                                    k
+                                ] += line_eval_results[
+                                    "all_correctly_localized_function"
+                                ][
+                                    k
+                                ]
                             # top 10 correct idx and not correct idx
                             if line_eval_results["top_10_correct_idx"] != []:
-                                all_top_10_correct_idx.append(line_eval_results["top_10_correct_idx"][0])
+                                all_top_10_correct_idx.append(
+                                    line_eval_results["top_10_correct_idx"][0]
+                                )
                             if line_eval_results["top_10_not_correct_idx"] != []:
-                                all_top_10_not_correct_idx.append(line_eval_results["top_10_not_correct_idx"][0])
+                                all_top_10_not_correct_idx.append(
+                                    line_eval_results["top_10_not_correct_idx"][0]
+                                )
                     else:
                         na_explanation_total += 1
                         na_defective_data_point += 1
@@ -593,30 +738,48 @@ def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
             logger.info(f"NA Eval Results (Out of 512 Tokens): {na_eval_results_512}")
             logger.info(f"NA Defective Data Point: {na_defective_data_point}")
 
-            line_level_results = [{f"codebert_{reasoning_method}_top20%_recall":
-                                       [round(total_correctly_predicted_flaw_lines[i] / total_flaw_lines, 2) * 100 for i
-                                        in range(len(top_k_locs))],
-                                   f"codebert_{reasoning_method}_top10_accuracy":
-                                       [round(total_correctly_localized_function[i] / total_function, 2) * 100 for i in
-                                        range(len(top_k_constant))],
-                                   f"codebert_{reasoning_method}_ifa":
-                                       round(total_min_clean_lines_inspected / total_function, 2),
-                                   f"codebert_{reasoning_method}_recall@topk%loc_auc":
-                                       auc(x=top_k_locs,
-                                           y=[round(total_correctly_predicted_flaw_lines[i] / total_flaw_lines, 2) for i
-                                              in range(len(top_k_locs))]),
-                                   f"codebert_{reasoning_method}_total_effort":
-                                       round(total_max_clean_lines_inspected / sum_total_lines, 2),
-                                   "avg_line_in_one_func":
-                                       int(sum_total_lines / total_function),
-                                   "total_func":
-                                       total_function,
-                                   "all_top_10_correct_idx": all_top_10_correct_idx,
-                                   "all_top_10_not_correct_idx": all_top_10_not_correct_idx}]
+            line_level_results = [
+                {
+                    f"codebert_{reasoning_method}_top20%_recall": [
+                        round(
+                            total_correctly_predicted_flaw_lines[i] / total_flaw_lines,
+                            2,
+                        )
+                        * 100
+                        for i in range(len(top_k_locs))
+                    ],
+                    f"codebert_{reasoning_method}_top10_accuracy": [
+                        round(total_correctly_localized_function[i] / total_function, 2)
+                        * 100
+                        for i in range(len(top_k_constant))
+                    ],
+                    f"codebert_{reasoning_method}_ifa": round(
+                        total_min_clean_lines_inspected / total_function, 2
+                    ),
+                    f"codebert_{reasoning_method}_recall@topk%loc_auc": auc(
+                        x=top_k_locs,
+                        y=[
+                            round(
+                                total_correctly_predicted_flaw_lines[i]
+                                / total_flaw_lines,
+                                2,
+                            )
+                            for i in range(len(top_k_locs))
+                        ],
+                    ),
+                    f"codebert_{reasoning_method}_total_effort": round(
+                        total_max_clean_lines_inspected / sum_total_lines, 2
+                    ),
+                    "avg_line_in_one_func": int(sum_total_lines / total_function),
+                    "total_func": total_function,
+                    "all_top_10_correct_idx": all_top_10_correct_idx,
+                    "all_top_10_not_correct_idx": all_top_10_not_correct_idx,
+                }
+            ]
 
-            with open('./results/line_level_correct_idx.pkl', 'wb') as f:
+            with open("./results/line_level_correct_idx.pkl", "wb") as f:
                 pickle.dump(all_top_10_correct_idx, f)
-            with open('./results/line_level_not_correct_idx.pkl', 'wb') as f:
+            with open("./results/line_level_not_correct_idx.pkl", "wb") as f:
                 pickle.dump(all_top_10_not_correct_idx, f)
 
             logger.info("***** Line Level Result *****")
@@ -626,7 +789,9 @@ def test(args, model, tokenizer, test_dataset, best_threshold=0.5):
             #    pickle.dump(line_level_results, f)
 
 
-def generate_result_df(logits, y_trues, y_preds, args, flaw_line_indices: List[int] = None):
+def generate_result_df(
+    logits, y_trues, y_preds, args, flaw_line_indices: List[int] = None
+):
     df = pd.read_csv(args.test_data_file)
     all_num_lines = []
     all_processed_func = df["processed_func"].tolist()
@@ -644,10 +809,18 @@ def generate_result_df(logits, y_trues, y_preds, args, flaw_line_indices: List[i
             num_flaw_lines = 0
         all_num_flaw_lines.append(num_flaw_lines)
     assert len(logits) == len(y_trues) == len(y_preds) == len(all_num_flaw_lines)
-    return pd.DataFrame({"logits": logits, "y_trues": y_trues, "y_preds": y_preds,
-                         "index": list(range(len(logits))), "num_flaw_lines": all_num_flaw_lines,
-                         "num_lines": all_num_lines,
-                         "flaw_line": df["flaw_line"], "processed_func": df["processed_func"]})
+    return pd.DataFrame(
+        {
+            "logits": logits,
+            "y_trues": y_trues,
+            "y_preds": y_preds,
+            "index": list(range(len(logits))),
+            "num_flaw_lines": all_num_flaw_lines,
+            "num_lines": all_num_lines,
+            "flaw_line": df["flaw_line"],
+            "processed_func": df["processed_func"],
+        }
+    )
 
 
 def write_raw_preds_csv(args, y_preds):
@@ -670,7 +843,9 @@ def get_line_statistics(result_df):
 
 def rank_lines(all_lines_score_with_label, is_attention, ascending_ranking):
     # flatten the list
-    all_lines_score_with_label = [line for lines in all_lines_score_with_label for line in lines]
+    all_lines_score_with_label = [
+        line for lines in all_lines_score_with_label for line in lines
+    ]
     if is_attention:
         all_scores = [line[0].item() for line in all_lines_score_with_label]
     else:
@@ -701,7 +876,9 @@ def top_k_effort(rank_df, sum_lines, sum_flaw_lines, top_k_loc, label_col_name="
     return effort, inspected_line
 
 
-def top_k_effort_pred_prob(rank_df, sum_lines, sum_flaw_lines, top_k_loc, label_col_name="y_preds"):
+def top_k_effort_pred_prob(
+    rank_df, sum_lines, sum_flaw_lines, top_k_loc, label_col_name="y_preds"
+):
     target_flaw_line = int(sum_flaw_lines * top_k_loc)
     caught_flaw_line = 0
     inspected_line = 0
@@ -737,7 +914,13 @@ def top_k_recall(pos_rank_df, neg_rank_df, sum_lines, sum_flaw_lines, top_k_loc)
     return round(caught_flaw_line / sum_flaw_lines, 4)
 
 
-def top_k_recall_pred_prob(rank_df, sum_lines: int, sum_flaw_lines: int, top_k_loc: float, label_col_name="y_preds"):
+def top_k_recall_pred_prob(
+    rank_df,
+    sum_lines: int,
+    sum_flaw_lines: int,
+    top_k_loc: float,
+    label_col_name="y_preds",
+):
     target_inspected_line = int(sum_lines * top_k_loc)
     caught_flaw_line = 0
     inspected_line = 0
@@ -762,8 +945,19 @@ def create_ref_input_ids(input_ids, ref_token_id, sep_token_id, cls_token_id):
     return torch.tensor([ref_input_ids])
 
 
-def line_level_localization_tp(flaw_lines: str, tokenizer, model, mini_batch, original_func: str, args, top_k_loc: list,
-                               top_k_constant: list, reasoning_method: str, index: int, write_invalid_data: bool):
+def line_level_localization_tp(
+    flaw_lines: str,
+    tokenizer,
+    model,
+    mini_batch,
+    original_func: str,
+    args,
+    top_k_loc: list,
+    top_k_constant: list,
+    reasoning_method: str,
+    index: int,
+    write_invalid_data: bool,
+):
     # function for captum LIG.
     def predict(input_ids):
         return model(input_ids=input_ids)[0]
@@ -780,17 +974,19 @@ def line_level_localization_tp(flaw_lines: str, tokenizer, model, mini_batch, or
     all_tokens = tokenizer.convert_ids_to_tokens(ids)
     all_tokens = [token.replace("Ġ", "") for token in all_tokens]
     all_tokens = [token.replace("ĉ", "Ċ") for token in all_tokens]
-    original_lines = ''.join(all_tokens).split("Ċ")
+    original_lines = "".join(all_tokens).split("Ċ")
 
     # flaw line verification
     # get flaw tokens ground truth
-    flaw_lines = get_all_flaw_lines(flaw_lines=flaw_lines, flaw_line_seperator=flaw_line_seperator)
+    flaw_lines = get_all_flaw_lines(
+        flaw_lines=flaw_lines, flaw_line_seperator=flaw_line_seperator
+    )
     flaw_tokens_encoded = encode_all_lines(all_lines=flaw_lines, tokenizer=tokenizer)
     verified_flaw_lines = []
     do_explanation = False
     for i in range(len(flaw_tokens_encoded)):
-        encoded_flaw = ''.join(flaw_tokens_encoded[i])
-        encoded_all = ''.join(all_tokens)
+        encoded_flaw = "".join(flaw_tokens_encoded[i])
+        encoded_all = "".join(all_tokens)
         if encoded_flaw in encoded_all:
             verified_flaw_lines.append(flaw_tokens_encoded[i])
             do_explanation = True
@@ -817,11 +1013,11 @@ def line_level_localization_tp(flaw_lines: str, tokenizer, model, mini_batch, or
             # clean att score for <s> and </s>
             attention = clean_special_token_values(attention, padding=True)
             # attention should be 1D tensor with seq length representing each token's attention value
-            word_att_scores = get_word_att_scores(all_tokens=all_tokens, att_scores=attention)
+            word_att_scores = get_word_att_scores(
+                all_tokens=all_tokens, att_scores=attention
+            )
             all_lines, all_lines_score, flaw_line_indices = get_all_lines_score(
-                word_att_scores,
-                verified_flaw_lines,
-                return_orig_lines=True
+                word_att_scores, verified_flaw_lines, return_orig_lines=True
             )
             line_to_score = dict(zip(all_lines, all_lines_score))
             logging.info(line_to_score)
@@ -829,23 +1025,45 @@ def line_level_localization_tp(flaw_lines: str, tokenizer, model, mini_batch, or
             # return if no flaw lines exist
             if len(flaw_line_indices) == 0:
                 return "NA"
-            total_lines, num_of_flaw_lines, all_correctly_predicted_flaw_lines, min_clean_lines_inspected, max_clean_lines_inspected, all_correctly_localized_func, top_10_correct_idx, top_10_not_correct_idx \
-                = \
-                line_level_evaluation(all_lines_score=all_lines_score, flaw_line_indices=flaw_line_indices,
-                                      top_k_loc=top_k_loc, top_k_constant=top_k_constant, true_positive_only=True,
-                                      index=index)
+            (
+                total_lines,
+                num_of_flaw_lines,
+                all_correctly_predicted_flaw_lines,
+                min_clean_lines_inspected,
+                max_clean_lines_inspected,
+                all_correctly_localized_func,
+                top_10_correct_idx,
+                top_10_not_correct_idx,
+            ) = line_level_evaluation(
+                all_lines_score=all_lines_score,
+                flaw_line_indices=flaw_line_indices,
+                top_k_loc=top_k_loc,
+                top_k_constant=top_k_constant,
+                true_positive_only=True,
+                index=index,
+            )
         elif reasoning_method == "lig":
-            ref_token_id, sep_token_id, cls_token_id = tokenizer.pad_token_id, tokenizer.sep_token_id, tokenizer.cls_token_id
-            ref_input_ids = create_ref_input_ids(input_ids, ref_token_id, sep_token_id, cls_token_id)
+            ref_token_id, sep_token_id, cls_token_id = (
+                tokenizer.pad_token_id,
+                tokenizer.sep_token_id,
+                tokenizer.cls_token_id,
+            )
+            ref_input_ids = create_ref_input_ids(
+                input_ids, ref_token_id, sep_token_id, cls_token_id
+            )
             # send data to device
             input_ids = input_ids.to(args.device)
             labels = labels.to(args.device)
             ref_input_ids = ref_input_ids.to(args.device)
-            lig = LayerIntegratedGradients(lig_forward, model.encoder.roberta.embeddings)
-            attributions, delta = lig.attribute(inputs=input_ids,
-                                                baselines=ref_input_ids,
-                                                internal_batch_size=32,
-                                                return_convergence_delta=True)
+            lig = LayerIntegratedGradients(
+                lig_forward, model.encoder.roberta.embeddings
+            )
+            attributions, delta = lig.attribute(
+                inputs=input_ids,
+                baselines=ref_input_ids,
+                internal_batch_size=32,
+                return_convergence_delta=True,
+            )
             score = predict(input_ids)
             pred_idx = torch.argmax(score).cpu().numpy()
             pred_prob = score[pred_idx]
@@ -854,23 +1072,41 @@ def line_level_localization_tp(flaw_lines: str, tokenizer, model, mini_batch, or
             # each token should have one score
             assert len(all_tokens) == len(attr_scores)
             # store tokens and attr scores together in a list of tuple [(token, attr_score)]
-            word_attr_scores = get_word_att_scores(all_tokens=all_tokens, att_scores=attr_scores)
+            word_attr_scores = get_word_att_scores(
+                all_tokens=all_tokens, att_scores=attr_scores
+            )
             # remove <s>, </s>, <unk>, <pad>
             word_attr_scores = clean_word_attr_scores(word_attr_scores=word_attr_scores)
-            all_lines_score, flaw_line_indices = get_all_lines_score(word_attr_scores, verified_flaw_lines)
+            all_lines_score, flaw_line_indices = get_all_lines_score(
+                word_attr_scores, verified_flaw_lines
+            )
 
             # return if no flaw lines exist
             if len(flaw_line_indices) == 0:
                 return "NA"
-            total_lines, num_of_flaw_lines, all_correctly_predicted_flaw_lines, min_clean_lines_inspected, max_clean_lines_inspected, all_correctly_localized_func, top_10_correct_idx, top_10_not_correct_idx \
-                = \
-                line_level_evaluation(all_lines_score=all_lines_score, flaw_line_indices=flaw_line_indices,
-                                      top_k_loc=top_k_loc, top_k_constant=top_k_constant, true_positive_only=True,
-                                      index=index)
-        elif reasoning_method == "deeplift" or \
-                reasoning_method == "deeplift_shap" or \
-                reasoning_method == "gradient_shap" or \
-                reasoning_method == "saliency":
+            (
+                total_lines,
+                num_of_flaw_lines,
+                all_correctly_predicted_flaw_lines,
+                min_clean_lines_inspected,
+                max_clean_lines_inspected,
+                all_correctly_localized_func,
+                top_10_correct_idx,
+                top_10_not_correct_idx,
+            ) = line_level_evaluation(
+                all_lines_score=all_lines_score,
+                flaw_line_indices=flaw_line_indices,
+                top_k_loc=top_k_loc,
+                top_k_constant=top_k_constant,
+                true_positive_only=True,
+                index=index,
+            )
+        elif (
+            reasoning_method == "deeplift"
+            or reasoning_method == "deeplift_shap"
+            or reasoning_method == "gradient_shap"
+            or reasoning_method == "saliency"
+        ):
             # send data to device
             input_ids = input_ids.to(args.device)
             input_embed = model.encoder.roberta.embeddings(input_ids).to(args.device)
@@ -880,11 +1116,15 @@ def line_level_localization_tp(flaw_lines: str, tokenizer, model, mini_batch, or
                 reasoning_model = DeepLift(model)
             elif reasoning_method == "deeplift_shap":
                 # baselines = torch.randn(16, 512, 768, requires_grad=True).to(args.device)
-                baselines = torch.zeros(16, 512, 768, requires_grad=True).to(args.device)
+                baselines = torch.zeros(16, 512, 768, requires_grad=True).to(
+                    args.device
+                )
                 reasoning_model = DeepLiftShap(model)
             elif reasoning_method == "gradient_shap":
                 # baselines = torch.randn(16, 512, 768, requires_grad=True).to(args.device)
-                baselines = torch.zeros(16, 512, 768, requires_grad=True).to(args.device)
+                baselines = torch.zeros(16, 512, 768, requires_grad=True).to(
+                    args.device
+                )
                 reasoning_model = GradientShap(model)
             elif reasoning_method == "saliency":
                 reasoning_model = Saliency(model)
@@ -892,33 +1132,53 @@ def line_level_localization_tp(flaw_lines: str, tokenizer, model, mini_batch, or
             if reasoning_method == "saliency":
                 attributions = reasoning_model.attribute(input_embed, target=1)
             else:
-                attributions = reasoning_model.attribute(input_embed, baselines=baselines, target=1)
+                attributions = reasoning_model.attribute(
+                    input_embed, baselines=baselines, target=1
+                )
             attributions_sum = summarize_attributions(attributions)
             attr_scores = attributions_sum.tolist()
             # each token should have one score
             assert len(all_tokens) == len(attr_scores)
             # store tokens and attr scores together in a list of tuple [(token, attr_score)]
-            word_attr_scores = get_word_att_scores(all_tokens=all_tokens, att_scores=attr_scores)
+            word_attr_scores = get_word_att_scores(
+                all_tokens=all_tokens, att_scores=attr_scores
+            )
             # remove <s>, </s>, <unk>, <pad>
             word_attr_scores = clean_word_attr_scores(word_attr_scores=word_attr_scores)
-            all_lines_score, flaw_line_indices = get_all_lines_score(word_attr_scores, verified_flaw_lines)
+            all_lines_score, flaw_line_indices = get_all_lines_score(
+                word_attr_scores, verified_flaw_lines
+            )
             # return if no flaw lines exist
             if len(flaw_line_indices) == 0:
                 return "NA"
-            total_lines, num_of_flaw_lines, all_correctly_predicted_flaw_lines, min_clean_lines_inspected, max_clean_lines_inspected, all_correctly_localized_func, top_10_correct_idx, top_10_not_correct_idx \
-                = \
-                line_level_evaluation(all_lines_score=all_lines_score, flaw_line_indices=flaw_line_indices,
-                                      top_k_loc=top_k_loc, top_k_constant=top_k_constant, true_positive_only=True,
-                                      index=index)
+            (
+                total_lines,
+                num_of_flaw_lines,
+                all_correctly_predicted_flaw_lines,
+                min_clean_lines_inspected,
+                max_clean_lines_inspected,
+                all_correctly_localized_func,
+                top_10_correct_idx,
+                top_10_not_correct_idx,
+            ) = line_level_evaluation(
+                all_lines_score=all_lines_score,
+                flaw_line_indices=flaw_line_indices,
+                top_k_loc=top_k_loc,
+                top_k_constant=top_k_constant,
+                true_positive_only=True,
+                index=index,
+            )
 
-        results = {"total_lines": total_lines,
-                   "num_of_flaw_lines": num_of_flaw_lines,
-                   "all_correctly_predicted_flaw_lines": all_correctly_predicted_flaw_lines,
-                   "all_correctly_localized_function": all_correctly_localized_func,
-                   "min_clean_lines_inspected": min_clean_lines_inspected,
-                   "max_clean_lines_inspected": max_clean_lines_inspected,
-                   "top_10_correct_idx": top_10_correct_idx,
-                   "top_10_not_correct_idx": top_10_not_correct_idx}
+        results = {
+            "total_lines": total_lines,
+            "num_of_flaw_lines": num_of_flaw_lines,
+            "all_correctly_predicted_flaw_lines": all_correctly_predicted_flaw_lines,
+            "all_correctly_localized_function": all_correctly_localized_func,
+            "min_clean_lines_inspected": min_clean_lines_inspected,
+            "max_clean_lines_inspected": max_clean_lines_inspected,
+            "top_10_correct_idx": top_10_correct_idx,
+            "top_10_not_correct_idx": top_10_not_correct_idx,
+        }
         return results
     else:
         if write_invalid_data:
@@ -926,12 +1186,12 @@ def line_level_localization_tp(flaw_lines: str, tokenizer, model, mini_batch, or
             os.makedirs(dirshit, exist_ok=True)
             output_file = "%sinvalid_line_lev_data.txt" % dirshit
             if not os.path.exists(output_file):
-                with open(output_file, 'w') as f:
-                    f.write('')
+                with open(output_file, "w") as f:
+                    f.write("")
             with open(output_file, "a") as f:
                 f.writelines("--- ALL TOKENS ---")
                 f.writelines("\n")
-                alltok = ''.join(all_tokens)
+                alltok = "".join(all_tokens)
                 alltok = alltok.split("Ċ")
                 for tok in alltok:
                     f.writelines(tok)
@@ -939,7 +1199,7 @@ def line_level_localization_tp(flaw_lines: str, tokenizer, model, mini_batch, or
                 f.writelines("--- FLAW ---")
                 f.writelines("\n")
                 for i in range(len(flaw_tokens_encoded)):
-                    f.writelines(''.join(flaw_tokens_encoded[i]))
+                    f.writelines("".join(flaw_tokens_encoded[i]))
                     f.writelines("\n")
                 f.writelines("\n")
                 f.writelines("\n")
@@ -947,8 +1207,18 @@ def line_level_localization_tp(flaw_lines: str, tokenizer, model, mini_batch, or
     return "NA"
 
 
-def line_level_localization(flaw_lines: str, tokenizer, model, mini_batch, original_func: str, args,
-                            top_k_loc: list, top_k_constant: list, reasoning_method: str, index: int):
+def line_level_localization(
+    flaw_lines: str,
+    tokenizer,
+    model,
+    mini_batch,
+    original_func: str,
+    args,
+    top_k_loc: list,
+    top_k_constant: list,
+    reasoning_method: str,
+    index: int,
+):
     # function for captum LIG.
     def predict(input_ids):
         return model(input_ids=input_ids)[0]
@@ -965,16 +1235,18 @@ def line_level_localization(flaw_lines: str, tokenizer, model, mini_batch, origi
     all_tokens = tokenizer.convert_ids_to_tokens(ids)
     all_tokens = [token.replace("Ġ", "") for token in all_tokens]
     all_tokens = [token.replace("ĉ", "Ċ") for token in all_tokens]
-    original_lines = ''.join(all_tokens).split("Ċ")
+    original_lines = "".join(all_tokens).split("Ċ")
 
     # flaw line verification
     # get flaw tokens ground truth
-    flaw_lines = get_all_flaw_lines(flaw_lines=flaw_lines, flaw_line_seperator=flaw_line_seperator)
+    flaw_lines = get_all_flaw_lines(
+        flaw_lines=flaw_lines, flaw_line_seperator=flaw_line_seperator
+    )
     flaw_tokens_encoded = encode_all_lines(all_lines=flaw_lines, tokenizer=tokenizer)
     verified_flaw_lines = []
     for i in range(len(flaw_tokens_encoded)):
-        encoded_flaw = ''.join(flaw_tokens_encoded[i])
-        encoded_all = ''.join(all_tokens)
+        encoded_flaw = "".join(flaw_tokens_encoded[i])
+        encoded_all = "".join(all_tokens)
         if encoded_flaw in encoded_all:
             verified_flaw_lines.append(flaw_tokens_encoded[i])
 
@@ -1000,14 +1272,28 @@ def line_level_localization(flaw_lines: str, tokenizer, model, mini_batch, origi
         # clean att score for <s> and </s>
         attention = clean_special_token_values(attention, padding=True)
         # attention should be 1D tensor with seq length representing each token's attention value
-        word_att_scores = get_word_att_scores(all_tokens=all_tokens, att_scores=attention)
-        all_lines_score, flaw_line_indices = get_all_lines_score(word_att_scores, verified_flaw_lines)
-        all_lines_score_with_label = \
-            line_level_evaluation(all_lines_score=all_lines_score, flaw_line_indices=flaw_line_indices,
-                                  top_k_loc=top_k_loc, top_k_constant=top_k_constant, true_positive_only=False)
+        word_att_scores = get_word_att_scores(
+            all_tokens=all_tokens, att_scores=attention
+        )
+        all_lines_score, flaw_line_indices = get_all_lines_score(
+            word_att_scores, verified_flaw_lines
+        )
+        all_lines_score_with_label = line_level_evaluation(
+            all_lines_score=all_lines_score,
+            flaw_line_indices=flaw_line_indices,
+            top_k_loc=top_k_loc,
+            top_k_constant=top_k_constant,
+            true_positive_only=False,
+        )
     elif reasoning_method == "lig":
-        ref_token_id, sep_token_id, cls_token_id = tokenizer.pad_token_id, tokenizer.sep_token_id, tokenizer.cls_token_id
-        ref_input_ids = create_ref_input_ids(input_ids, ref_token_id, sep_token_id, cls_token_id)
+        ref_token_id, sep_token_id, cls_token_id = (
+            tokenizer.pad_token_id,
+            tokenizer.sep_token_id,
+            tokenizer.cls_token_id,
+        )
+        ref_input_ids = create_ref_input_ids(
+            input_ids, ref_token_id, sep_token_id, cls_token_id
+        )
         # send data to device
         input_ids = input_ids.to(args.device)
         labels = labels.to(args.device)
@@ -1015,10 +1301,12 @@ def line_level_localization(flaw_lines: str, tokenizer, model, mini_batch, origi
 
         lig = LayerIntegratedGradients(lig_forward, model.encoder.roberta.embeddings)
 
-        attributions, delta = lig.attribute(inputs=input_ids,
-                                            baselines=ref_input_ids,
-                                            internal_batch_size=32,
-                                            return_convergence_delta=True)
+        attributions, delta = lig.attribute(
+            inputs=input_ids,
+            baselines=ref_input_ids,
+            internal_batch_size=32,
+            return_convergence_delta=True,
+        )
         score = predict(input_ids)
         pred_idx = torch.argmax(score).cpu().numpy()
         pred_prob = score[pred_idx]
@@ -1027,17 +1315,27 @@ def line_level_localization(flaw_lines: str, tokenizer, model, mini_batch, origi
         # each token should have one score
         assert len(all_tokens) == len(attr_scores)
         # store tokens and attr scores together in a list of tuple [(token, attr_score)]
-        word_attr_scores = get_word_att_scores(all_tokens=all_tokens, att_scores=attr_scores)
+        word_attr_scores = get_word_att_scores(
+            all_tokens=all_tokens, att_scores=attr_scores
+        )
         # remove <s>, </s>, <unk>, <pad>
         word_attr_scores = clean_word_attr_scores(word_attr_scores=word_attr_scores)
-        all_lines_score, flaw_line_indices = get_all_lines_score(word_attr_scores, verified_flaw_lines)
-        all_lines_score_with_label = \
-            line_level_evaluation(all_lines_score=all_lines_score, flaw_line_indices=flaw_line_indices,
-                                  top_k_loc=top_k_loc, top_k_constant=top_k_constant, true_positive_only=False)
-    elif reasoning_method == "deeplift" or \
-            reasoning_method == "deeplift_shap" or \
-            reasoning_method == "gradient_shap" or \
-            reasoning_method == "saliency":
+        all_lines_score, flaw_line_indices = get_all_lines_score(
+            word_attr_scores, verified_flaw_lines
+        )
+        all_lines_score_with_label = line_level_evaluation(
+            all_lines_score=all_lines_score,
+            flaw_line_indices=flaw_line_indices,
+            top_k_loc=top_k_loc,
+            top_k_constant=top_k_constant,
+            true_positive_only=False,
+        )
+    elif (
+        reasoning_method == "deeplift"
+        or reasoning_method == "deeplift_shap"
+        or reasoning_method == "gradient_shap"
+        or reasoning_method == "saliency"
+    ):
         # send data to device
         input_ids = input_ids.to(args.device)
         input_embed = model.encoder.roberta.embeddings(input_ids).to(args.device)
@@ -1059,28 +1357,46 @@ def line_level_localization(flaw_lines: str, tokenizer, model, mini_batch, origi
         if reasoning_method == "saliency":
             attributions = reasoning_model.attribute(input_embed, target=1)
         else:
-            attributions = reasoning_model.attribute(input_embed, baselines=baselines, target=1)
+            attributions = reasoning_model.attribute(
+                input_embed, baselines=baselines, target=1
+            )
         attributions_sum = summarize_attributions(attributions)
         attr_scores = attributions_sum.tolist()
         # each token should have one score
         assert len(all_tokens) == len(attr_scores)
         # store tokens and attr scores together in a list of tuple [(token, attr_score)]
-        word_attr_scores = get_word_att_scores(all_tokens=all_tokens, att_scores=attr_scores)
+        word_attr_scores = get_word_att_scores(
+            all_tokens=all_tokens, att_scores=attr_scores
+        )
         # remove <s>, </s>, <unk>, <pad>
         word_attr_scores = clean_word_attr_scores(word_attr_scores=word_attr_scores)
-        all_lines_score, flaw_line_indices = get_all_lines_score(word_attr_scores, verified_flaw_lines)
+        all_lines_score, flaw_line_indices = get_all_lines_score(
+            word_attr_scores, verified_flaw_lines
+        )
 
-        all_lines_score_with_label = \
-            line_level_evaluation(all_lines_score=all_lines_score, flaw_line_indices=flaw_line_indices,
-                                  top_k_loc=top_k_loc, top_k_constant=top_k_constant, true_positive_only=False)
+        all_lines_score_with_label = line_level_evaluation(
+            all_lines_score=all_lines_score,
+            flaw_line_indices=flaw_line_indices,
+            top_k_loc=top_k_loc,
+            top_k_constant=top_k_constant,
+            true_positive_only=False,
+        )
     return all_lines_score_with_label
 
 
-def line_level_evaluation(all_lines_score: list, flaw_line_indices: list, top_k_loc: list, top_k_constant: list,
-                          true_positive_only: bool, index=None):
+def line_level_evaluation(
+    all_lines_score: list,
+    flaw_line_indices: list,
+    top_k_loc: list,
+    top_k_constant: list,
+    true_positive_only: bool,
+    index=None,
+):
     if true_positive_only:
-        # line indices ranking based on attr values 
-        ranking = sorted(range(len(all_lines_score)), key=lambda i: all_lines_score[i], reverse=True)
+        # line indices ranking based on attr values
+        ranking = sorted(
+            range(len(all_lines_score)), key=lambda i: all_lines_score[i], reverse=True
+        )
         # total flaw lines
         num_of_flaw_lines = len(flaw_line_indices)
         # clean lines + flaw lines
@@ -1096,7 +1412,7 @@ def line_level_evaluation(all_lines_score: list, flaw_line_indices: list, top_k_
                 # if within top-k
                 k = int(len(all_lines_score) * top_k)
                 # if detecting any flaw lines
-                if indice in ranking[: k]:
+                if indice in ranking[:k]:
                     correctly_predicted_flaw_lines += 1
                 if ifa:
                     # calculate Initial False Alarm
@@ -1121,7 +1437,7 @@ def line_level_evaluation(all_lines_score: list, flaw_line_indices: list, top_k_
         for k in top_k_constant:
             for indice in flaw_line_indices:
                 # if detecting any flaw lines
-                if indice in ranking[: k]:
+                if indice in ranking[:k]:
                     """
                     # extract example for the paper
                     if index == 2797:
@@ -1141,8 +1457,16 @@ def line_level_evaluation(all_lines_score: list, flaw_line_indices: list, top_k_
                 top_10_correct_idx.append(index)
             else:
                 top_10_not_correct_idx.append(index)
-        return total_lines, num_of_flaw_lines, all_correctly_predicted_flaw_lines, min_clean_lines_inspected, max_clean_lines_inspected, all_correctly_localized_func, \
-               top_10_correct_idx, top_10_not_correct_idx
+        return (
+            total_lines,
+            num_of_flaw_lines,
+            all_correctly_predicted_flaw_lines,
+            min_clean_lines_inspected,
+            max_clean_lines_inspected,
+            all_correctly_localized_func,
+            top_10_correct_idx,
+            top_10_not_correct_idx,
+        )
     else:
         # all_lines_score_with_label: [[line score, line level label], [line score, line level label], ...]
         all_lines_score_with_label = []
@@ -1155,26 +1479,28 @@ def line_level_evaluation(all_lines_score: list, flaw_line_indices: list, top_k_
 
 
 def clean_special_token_values(all_values, padding=False):
-    # special token in the beginning of the seq 
+    # special token in the beginning of the seq
     all_values[0] = 0
     if padding:
         # get the last non-zero value which represents the att score for </s> token
         idx = [index for index, item in enumerate(all_values) if item != 0][-1]
         all_values[idx] = 0
     else:
-        # special token in the end of the seq 
+        # special token in the end of the seq
         all_values[-1] = 0
     return all_values
 
 
 def clean_shap_tokens(all_tokens):
     for i in range(len(all_tokens)):
-        all_tokens[i] = all_tokens[i].replace('Ġ', '')
+        all_tokens[i] = all_tokens[i].replace("Ġ", "")
     return all_tokens
 
 
-def get_all_lines_score(word_att_scores: list, verified_flaw_lines: list, return_orig_lines: bool = False):
-    verified_flaw_lines = [''.join(l) for l in verified_flaw_lines]
+def get_all_lines_score(
+    word_att_scores: list, verified_flaw_lines: list, return_orig_lines: bool = False
+):
+    verified_flaw_lines = ["".join(l) for l in verified_flaw_lines]
     # word_att_scores -> [[token, att_value], [token, att_value], ...]
     separator = ["Ċ", " Ċ", "ĊĊ", " ĊĊ"]
     # to return
@@ -1186,7 +1512,9 @@ def get_all_lines_score(word_att_scores: list, verified_flaw_lines: list, return
     line = ""
     for i in range(len(word_att_scores)):
         # summerize if meet line separator or the last token
-        if ((word_att_scores[i][0] in separator) or (i == (len(word_att_scores) - 1))) and score_sum != 0:
+        if (
+            (word_att_scores[i][0] in separator) or (i == (len(word_att_scores) - 1))
+        ) and score_sum != 0:
             score_sum += word_att_scores[i][1]
             all_lines_score.append(score_sum)
             all_lines.append(line)
@@ -1236,7 +1564,7 @@ def get_word_att_scores(all_tokens: list, att_scores: list) -> list:
 
 
 def clean_word_attr_scores(word_attr_scores: list) -> list:
-    to_be_cleaned = ['<s>', '</s>', '<unk>', '<pad>']
+    to_be_cleaned = ["<s>", "</s>", "<unk>", "<pad>"]
     cleaned = []
     for word_attr_score in word_attr_scores:
         if word_attr_score[0] not in to_be_cleaned:
@@ -1253,138 +1581,272 @@ def encode_one_line(line, tokenizer):
 def main():
     parser = argparse.ArgumentParser()
     ## parameters
-    parser.add_argument("--train_data_file", default=None, type=str, required=False,
-                        help="The input training data file (a csv file).")
-    parser.add_argument("--output_dir", default=None, type=str, required=False,
-                        help="The output directory where the model predictions and checkpoints will be written.")
-    parser.add_argument("--model_type", default="bert", type=str,
-                        help="The model architecture to be fine-tuned.")
-    parser.add_argument("--block_size", default=-1, type=int,
-                        help="Optional input sequence length after tokenization."
-                             "The training dataset will be truncated in block of this size for training."
-                             "Default to the model max input length for single sentence inputs (take into account special tokens).")
-    parser.add_argument("--eval_data_file", default=None, type=str,
-                        help="An optional input evaluation data file to evaluate the perplexity on (a text file).")
-    parser.add_argument("--test_data_file", default=None, type=str,
-                        help="An optional input evaluation data file to evaluate the perplexity on (a text file).")
-    parser.add_argument("--model_name", default="model.bin", type=str,
-                        help="Saved model name.")
-    parser.add_argument("--model_name_or_path", default=None, type=str,
-                        help="The model checkpoint for weights initialization.")
-    parser.add_argument("--config_name", default="", type=str,
-                        help="Optional pretrained config name or path if not the same as model_name_or_path")
-    parser.add_argument("--use_non_pretrained_model", action='store_true', default=False,
-                        help="Whether to use non-pretrained model.")
-    parser.add_argument("--tokenizer_name", default="", type=str,
-                        help="Optional pretrained tokenizer name or path if not the same as model_name_or_path")
-    parser.add_argument("--code_length", default=256, type=int,
-                        help="Optional Code input sequence length after tokenization.")
+    parser.add_argument(
+        "--train_data_file",
+        default=None,
+        type=str,
+        required=False,
+        help="The input training data file (a csv file).",
+    )
+    parser.add_argument(
+        "--output_dir",
+        default=None,
+        type=str,
+        required=False,
+        help="The output directory where the model predictions and checkpoints will be written.",
+    )
+    parser.add_argument(
+        "--model_type",
+        default="bert",
+        type=str,
+        help="The model architecture to be fine-tuned.",
+    )
+    parser.add_argument(
+        "--block_size",
+        default=-1,
+        type=int,
+        help="Optional input sequence length after tokenization."
+        "The training dataset will be truncated in block of this size for training."
+        "Default to the model max input length for single sentence inputs (take into account special tokens).",
+    )
+    parser.add_argument(
+        "--eval_data_file",
+        default=None,
+        type=str,
+        help="An optional input evaluation data file to evaluate the perplexity on (a text file).",
+    )
+    parser.add_argument(
+        "--test_data_file",
+        default=None,
+        type=str,
+        help="An optional input evaluation data file to evaluate the perplexity on (a text file).",
+    )
+    parser.add_argument(
+        "--model_name", default="model.bin", type=str, help="Saved model name."
+    )
+    parser.add_argument(
+        "--model_name_or_path",
+        default=None,
+        type=str,
+        help="The model checkpoint for weights initialization.",
+    )
+    parser.add_argument(
+        "--config_name",
+        default="",
+        type=str,
+        help="Optional pretrained config name or path if not the same as model_name_or_path",
+    )
+    parser.add_argument(
+        "--use_non_pretrained_model",
+        action="store_true",
+        default=False,
+        help="Whether to use non-pretrained model.",
+    )
+    parser.add_argument(
+        "--tokenizer_name",
+        default="",
+        type=str,
+        help="Optional pretrained tokenizer name or path if not the same as model_name_or_path",
+    )
+    parser.add_argument(
+        "--code_length",
+        default=256,
+        type=int,
+        help="Optional Code input sequence length after tokenization.",
+    )
 
-    parser.add_argument("--do_train", action='store_true',
-                        help="Whether to run training.")
-    parser.add_argument("--do_eval", action='store_true',
-                        help="Whether to run eval on the dev set.")
-    parser.add_argument("--do_test", action='store_true',
-                        help="Whether to run eval on the dev set.")
+    parser.add_argument(
+        "--do_train", action="store_true", help="Whether to run training."
+    )
+    parser.add_argument(
+        "--do_eval", action="store_true", help="Whether to run eval on the dev set."
+    )
+    parser.add_argument(
+        "--do_test", action="store_true", help="Whether to run eval on the dev set."
+    )
 
-    parser.add_argument("--evaluate_during_training", action='store_true',
-                        help="Run evaluation during training at each logging step.")
-    parser.add_argument("--do_local_explanation", default=False, action='store_true',
-                        help="Whether to do local explanation. ")
-    parser.add_argument("--reasoning_method", default=None, type=str,
-                        help="Should be one of 'attention', 'shap', 'lime', 'lig'")
+    parser.add_argument(
+        "--evaluate_during_training",
+        action="store_true",
+        help="Run evaluation during training at each logging step.",
+    )
+    parser.add_argument(
+        "--do_local_explanation",
+        default=False,
+        action="store_true",
+        help="Whether to do local explanation. ",
+    )
+    parser.add_argument(
+        "--reasoning_method",
+        default=None,
+        type=str,
+        help="Should be one of 'attention', 'shap', 'lime', 'lig'",
+    )
 
-    parser.add_argument("--train_batch_size", default=4, type=int,
-                        help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--eval_batch_size", default=4, type=int,
-                        help="Batch size per GPU/CPU for evaluation.")
-    parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
-                        help="Number of updates steps to accumulate before performing a backward/update pass.")
-    parser.add_argument("--learning_rate", default=5e-5, type=float,
-                        help="The initial learning rate for Adam.")
-    parser.add_argument("--weight_decay", default=0.0, type=float,
-                        help="Weight deay if we apply some.")
-    parser.add_argument("--adam_epsilon", default=1e-8, type=float,
-                        help="Epsilon for Adam optimizer.")
-    parser.add_argument("--max_grad_norm", default=1.0, type=float,
-                        help="Max gradient norm.")
-    parser.add_argument("--max_steps", default=-1, type=int,
-                        help="If > 0: set total number of training steps to perform. Override num_train_epochs.")
-    parser.add_argument("--warmup_steps", default=0, type=int,
-                        help="Linear warmup over warmup_steps.")
-    parser.add_argument('--seed', type=int, default=42,
-                        help="random seed for initialization")
-    parser.add_argument('--epochs', type=int, default=1,
-                        help="training epochs")
+    parser.add_argument(
+        "--train_batch_size",
+        default=4,
+        type=int,
+        help="Batch size per GPU/CPU for training.",
+    )
+    parser.add_argument(
+        "--eval_batch_size",
+        default=4,
+        type=int,
+        help="Batch size per GPU/CPU for evaluation.",
+    )
+    parser.add_argument(
+        "--gradient_accumulation_steps",
+        type=int,
+        default=1,
+        help="Number of updates steps to accumulate before performing a backward/update pass.",
+    )
+    parser.add_argument(
+        "--learning_rate",
+        default=5e-5,
+        type=float,
+        help="The initial learning rate for Adam.",
+    )
+    parser.add_argument(
+        "--weight_decay", default=0.0, type=float, help="Weight deay if we apply some."
+    )
+    parser.add_argument(
+        "--adam_epsilon", default=1e-8, type=float, help="Epsilon for Adam optimizer."
+    )
+    parser.add_argument(
+        "--max_grad_norm", default=1.0, type=float, help="Max gradient norm."
+    )
+    parser.add_argument(
+        "--max_steps",
+        default=-1,
+        type=int,
+        help="If > 0: set total number of training steps to perform. Override num_train_epochs.",
+    )
+    parser.add_argument(
+        "--warmup_steps", default=0, type=int, help="Linear warmup over warmup_steps."
+    )
+    parser.add_argument(
+        "--seed", type=int, default=42, help="random seed for initialization"
+    )
+    parser.add_argument("--epochs", type=int, default=1, help="training epochs")
     # RQ2
-    parser.add_argument("--effort_at_top_k", default=0.2, type=float,
-                        help="Effort@TopK%Recall: effort at catching top k percent of vulnerable lines")
-    parser.add_argument("--top_k_recall_by_lines", default=0.01, type=float,
-                        help="Recall@TopK percent, sorted by line scores")
-    parser.add_argument("--top_k_recall_by_pred_prob", default=0.2, type=float,
-                        help="Recall@TopK percent, sorted by prediction probabilities")
+    parser.add_argument(
+        "--effort_at_top_k",
+        default=0.2,
+        type=float,
+        help="Effort@TopK%Recall: effort at catching top k percent of vulnerable lines",
+    )
+    parser.add_argument(
+        "--top_k_recall_by_lines",
+        default=0.01,
+        type=float,
+        help="Recall@TopK percent, sorted by line scores",
+    )
+    parser.add_argument(
+        "--top_k_recall_by_pred_prob",
+        default=0.2,
+        type=float,
+        help="Recall@TopK percent, sorted by prediction probabilities",
+    )
 
-    parser.add_argument("--do_sorting_by_line_scores", default=False, action='store_true',
-                        help="Whether to do sorting by line scores.")
-    parser.add_argument("--do_sorting_by_pred_prob", default=False, action='store_true',
-                        help="Whether to do sorting by prediction probabilities.")
+    parser.add_argument(
+        "--do_sorting_by_line_scores",
+        default=False,
+        action="store_true",
+        help="Whether to do sorting by line scores.",
+    )
+    parser.add_argument(
+        "--do_sorting_by_pred_prob",
+        default=False,
+        action="store_true",
+        help="Whether to do sorting by prediction probabilities.",
+    )
     # RQ3 - line-level evaluation
-    parser.add_argument('--top_k_constant', type=int, default=10,
-                        help="Top-K Accuracy constant")
+    parser.add_argument(
+        "--top_k_constant", type=int, default=10, help="Top-K Accuracy constant"
+    )
     # num of attention heads
-    parser.add_argument('--num_attention_heads', type=int, default=12,
-                        help="number of attention heads used in CodeBERT")
+    parser.add_argument(
+        "--num_attention_heads",
+        type=int,
+        default=12,
+        help="number of attention heads used in CodeBERT",
+    )
     # raw predictions
-    parser.add_argument("--write_raw_preds", default=False, action='store_true',
-                        help="Whether to write raw predictions on test data.")
+    parser.add_argument(
+        "--write_raw_preds",
+        default=False,
+        action="store_true",
+        help="Whether to write raw predictions on test data.",
+    )
     # word-level tokenizer
-    parser.add_argument("--use_word_level_tokenizer", default=False, action='store_true',
-                        help="Whether to use word-level tokenizer.")
+    parser.add_argument(
+        "--use_word_level_tokenizer",
+        default=False,
+        action="store_true",
+        help="Whether to use word-level tokenizer.",
+    )
     # bpe non-pretrained tokenizer
-    parser.add_argument("--use_non_pretrained_tokenizer", default=False, action='store_true',
-                        help="Whether to use non-pretrained bpe tokenizer.")
+    parser.add_argument(
+        "--use_non_pretrained_tokenizer",
+        default=False,
+        action="store_true",
+        help="Whether to use non-pretrained bpe tokenizer.",
+    )
     args = parser.parse_args()
     # Setup CUDA, GPU
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     args.n_gpu = torch.cuda.device_count()
     args.device = device
     # Setup logging
-    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s', datefmt='%m/%d/%Y %H:%M:%S',
-                        level=logging.INFO)
-    logger.warning("device: %s, n_gpu: %s", device, args.n_gpu, )
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+        datefmt="%m/%d/%Y %H:%M:%S",
+        level=logging.INFO,
+    )
+    logger.warning(
+        "device: %s, n_gpu: %s",
+        device,
+        args.n_gpu,
+    )
     # Set seed
     set_seed(args)
-    config = RobertaConfig.from_pretrained(args.config_name if args.config_name else args.model_name_or_path)
+    config = RobertaConfig.from_pretrained(
+        args.config_name if args.config_name else args.model_name_or_path
+    )
     config.num_labels = 1
     config.num_attention_heads = args.num_attention_heads
     if args.use_word_level_tokenizer:
-        print('using wordlevel tokenizer!')
-        tokenizer = Tokenizer.from_file('./word_level_tokenizer/wordlevel.json')
+        print("using wordlevel tokenizer!")
+        tokenizer = Tokenizer.from_file("./word_level_tokenizer/wordlevel.json")
     elif args.use_non_pretrained_tokenizer:
-        tokenizer = RobertaTokenizer(vocab_file="bpe_tokenizer/bpe_tokenizer-vocab.json",
-                                     merges_file="bpe_tokenizer/bpe_tokenizer-merges.txt")
+        tokenizer = RobertaTokenizer(
+            vocab_file="bpe_tokenizer/bpe_tokenizer-vocab.json",
+            merges_file="bpe_tokenizer/bpe_tokenizer-merges.txt",
+        )
     else:
         tokenizer = RobertaTokenizer.from_pretrained(args.tokenizer_name)
     if args.use_non_pretrained_model:
         model = RobertaForSequenceClassification(config=config)
     else:
-        model = RobertaForSequenceClassification.from_pretrained(args.model_name_or_path, config=config,
-                                                                 ignore_mismatched_sizes=True)
+        model = RobertaForSequenceClassification.from_pretrained(
+            args.model_name_or_path, config=config, ignore_mismatched_sizes=True
+        )
     model = Model(model, config, tokenizer, args)
     logger.info("Training/evaluation parameters %s", args)
     # Training
     if args.do_train:
-        train_dataset = TextDataset(tokenizer, args, file_type='train')
-        eval_dataset = TextDataset(tokenizer, args, file_type='eval')
+        train_dataset = TextDataset(tokenizer, args, file_type="train")
+        eval_dataset = TextDataset(tokenizer, args, file_type="eval")
         train(args, train_dataset, model, tokenizer, eval_dataset)
     # Evaluation
     results = {}
     if args.do_test:
-        checkpoint_prefix = f'checkpoint-best-f1/{args.model_name}'
-        output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix))
+        checkpoint_prefix = f"checkpoint-best-f1/{args.model_name}"
+        output_dir = os.path.join(args.output_dir, "{}".format(checkpoint_prefix))
         model.load_state_dict(torch.load(output_dir, map_location=args.device))
         model.to(args.device)
-        test_dataset = TextDataset(tokenizer, args, file_type='test')
+        test_dataset = TextDataset(tokenizer, args, file_type="test")
         test(args, model, tokenizer, test_dataset, best_threshold=0.5)
     return results
 

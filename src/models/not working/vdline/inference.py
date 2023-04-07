@@ -27,8 +27,8 @@ def predict(code):
 
     # Load Models
     linevd_dir = os.path.join("models", "vdline")
-    nlp_model = Doc2Vec.load(os.path.join(linevd_dir, 'line_vec_model'))
-    class_model = keras.models.load_model(os.path.join(linevd_dir, 'classifier_model'))
+    nlp_model = Doc2Vec.load(os.path.join(linevd_dir, "line_vec_model"))
+    class_model = keras.models.load_model(os.path.join(linevd_dir, "classifier_model"))
 
     # Use models to convert lines of input file to vectors and classify
     for j in range(len(test_func)):
@@ -47,7 +47,7 @@ def inference(codes):
     return predictions
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     code = """// A C program to demonstrate buffer overflow
     #include <stdio.h>
     #include <string.h>

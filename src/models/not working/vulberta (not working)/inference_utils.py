@@ -32,7 +32,7 @@ def get_vulberta_args(vulberta_model_name):
     seedlist = [42, 834, 692, 489, 901, 408, 819, 808, 531, 166]
 
     seed = seedlist[0]
-    os.environ['PYTHONHASHSEED'] = str(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -49,7 +49,7 @@ def get_vulberta_model(args):
     # Load pre-trained tokenizers
     vocab, merges = BPE.read_file(
         vocab="models/vulberta/tokenizer/drapgh-vocab.json",
-        merges="models/vulberta/tokenizer/drapgh-merges.txt"
+        merges="models/vulberta/tokenizer/drapgh-merges.txt",
     )
     my_tokenizer = Tokenizer(BPE(vocab, merges, unk_token="<unk>"))
 
@@ -63,21 +63,21 @@ def get_vulberta_model(args):
             ("<pad>", 1),
             ("</s>", 2),
             ("<unk>", 3),
-            ("<mask>", 4)
-        ]
+            ("<mask>", 4),
+        ],
     )
 
     my_tokenizer.enable_truncation(max_length=1024)
     my_tokenizer.enable_padding(
-        direction='right',
+        direction="right",
         pad_id=1,
         pad_type_id=0,
-        pad_token='<pad>',
+        pad_token="<pad>",
         length=None,
-        pad_to_multiple_of=None
+        pad_to_multiple_of=None,
     )
     model = RobertaForSequenceClassification.from_pretrained(
-        f'models/vulberta/saved_models/{args.vulberta_model_name}'
+        f"models/vulberta/saved_models/{args.vulberta_model_name}"
     )
     model.to(args.device)
     model.eval()
@@ -90,8 +90,8 @@ def infer(model, my_tokenizer, code_list, args):
     test_encodings = my_tokenizer.encode_batch(cleaned_code)
     test_encodings = process_encodings(test_encodings)
 
-    input_ids = torch.LongTensor(test_encodings['input_ids']).to(args.device)
-    attention_mask = torch.Tensor(test_encodings['attention_mask']).to(args.device)
+    input_ids = torch.LongTensor(test_encodings["input_ids"]).to(args.device)
+    attention_mask = torch.Tensor(test_encodings["attention_mask"]).to(args.device)
     outputs = model(input_ids, attention_mask=attention_mask)
     logits = outputs.logits
     probs = torch.softmax(logits, dim=1)
@@ -104,17 +104,21 @@ def infer(model, my_tokenizer, code_list, args):
 class MyTokenizer:
     cidx = cindex.Index.create()
 
-    def clang_split(self, i: int, normalized_string: NormalizedString) -> List[NormalizedString]:
+    def clang_split(
+        self, i: int, normalized_string: NormalizedString
+    ) -> List[NormalizedString]:
         # Tokkenize using clang
         tok = []
-        tu = self.cidx.parse('tmp.c',
-                             args=[''],
-                             unsaved_files=[('tmp.c', str(normalized_string.original))],
-                             options=0)
+        tu = self.cidx.parse(
+            "tmp.c",
+            args=[""],
+            unsaved_files=[("tmp.c", str(normalized_string.original))],
+            options=0,
+        )
         for t in tu.get_tokens(extent=tu.cursor.extent):
             spelling = t.spelling.strip()
 
-            if spelling == '':
+            if spelling == "":
                 continue
 
             # Keyword no need
@@ -126,7 +130,7 @@ class MyTokenizer:
             # spelling = spelling.replace(' ', '')
             tok.append(NormalizedString(spelling))
 
-        return (tok)
+        return tok
 
     def pre_tokenize(self, pretok: PreTokenizedString):
         pretok.split(self.clang_split)
@@ -138,13 +142,13 @@ def process_encodings(encodings):
     for enc in encodings:
         input_ids.append(enc.ids)
         attention_mask.append(enc.attention_mask)
-    return {'input_ids': input_ids, 'attention_mask': attention_mask}
+    return {"input_ids": input_ids, "attention_mask": attention_mask}
 
 
 def cleaner(code):
     # Remove code comments
-    pat = re.compile(r'(/\*([^*]|(\*+[^*/]))*\*+/)|(//.*)')
-    code = re.sub(pat, '', code)
-    code = re.sub('\n', '', code)
-    code = re.sub('\t', '', code)
-    return (code)
+    pat = re.compile(r"(/\*([^*]|(\*+[^*/]))*\*+/)|(//.*)")
+    code = re.sub(pat, "", code)
+    code = re.sub("\n", "", code)
+    code = re.sub("\t", "", code)
+    return code

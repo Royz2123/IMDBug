@@ -5,9 +5,7 @@ from models.base_model import BaseModel
 from models.llvm.base_model import TextClassificationModel
 
 MODEL_LOCATION = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    "saved_models",
-    "codebert-llvm-ic-v0"
+    os.path.dirname(os.path.realpath(__file__)), "saved_models", "codebert-llvm-ic-v0"
 )
 
 
@@ -27,7 +25,9 @@ class LlvmModel(BaseModel):
     def load_model(self):
         self.model = self.llvm_object.get_model()
 
-    def infer(self, funcs: List[str], file_type: str = None) -> Tuple[List[List] or None, List, List]:
+    def infer(
+        self, funcs: List[str], file_type: str = None
+    ) -> Tuple[List[List] or None, List, List]:
         self.validate_load()
         all_line_scores, y_pred, y_prob = self.llvm_object.inference(self.model, funcs)
         y_pred, y_prob = LlvmModel.convert_format(y_pred, y_prob)

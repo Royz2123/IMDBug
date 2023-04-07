@@ -31,13 +31,20 @@ class Model(RobertaForSequenceClassification):
         self.classifier = RobertaClassificationHead(config)
         self.args = args
 
-    def forward(self, input_embed=None, labels=None, output_attentions=False, input_ids=None):
+    def forward(
+        self, input_embed=None, labels=None, output_attentions=False, input_ids=None
+    ):
         if output_attentions:
             if input_ids is not None:
-                outputs = self.encoder.roberta(input_ids, attention_mask=input_ids.ne(1),
-                                               output_attentions=output_attentions)
+                outputs = self.encoder.roberta(
+                    input_ids,
+                    attention_mask=input_ids.ne(1),
+                    output_attentions=output_attentions,
+                )
             else:
-                outputs = self.encoder.roberta(inputs_embeds=input_embed, output_attentions=output_attentions)
+                outputs = self.encoder.roberta(
+                    inputs_embeds=input_embed, output_attentions=output_attentions
+                )
             attentions = outputs.attentions
             last_hidden_state = outputs.last_hidden_state
             logits = self.classifier(last_hidden_state)
@@ -50,10 +57,15 @@ class Model(RobertaForSequenceClassification):
                 return prob, attentions
         else:
             if input_ids is not None:
-                outputs = \
-                self.encoder.roberta(input_ids, attention_mask=input_ids.ne(1), output_attentions=output_attentions)[0]
+                outputs = self.encoder.roberta(
+                    input_ids,
+                    attention_mask=input_ids.ne(1),
+                    output_attentions=output_attentions,
+                )[0]
             else:
-                outputs = self.encoder.roberta(inputs_embeds=input_embed, output_attentions=output_attentions)[0]
+                outputs = self.encoder.roberta(
+                    inputs_embeds=input_embed, output_attentions=output_attentions
+                )[0]
             logits = self.classifier(outputs)
             prob = torch.softmax(logits, dim=-1)
             if labels is not None:

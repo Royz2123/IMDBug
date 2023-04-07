@@ -6,30 +6,49 @@ from typing import List, Tuple, Dict, Union
 
 import numpy as np
 import torch
-from captum.attr import LayerIntegratedGradients, DeepLift, DeepLiftShap, GradientShap, Saliency
+from captum.attr import (
+    LayerIntegratedGradients,
+    DeepLift,
+    DeepLiftShap,
+    GradientShap,
+    Saliency,
+)
 from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score
 from torch import Tensor
 from torch.utils.data import DataLoader, SequentialSampler
 
-from models.linevul.linevul_main import clean_special_token_values, get_word_att_scores, create_ref_input_ids, \
-    summarize_attributions, clean_word_attr_scores, write_raw_preds_csv, TextDataset
+from models.linevul.linevul_main import (
+    clean_special_token_values,
+    get_word_att_scores,
+    create_ref_input_ids,
+    summarize_attributions,
+    clean_word_attr_scores,
+    write_raw_preds_csv,
+    TextDataset,
+)
 
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
 
 
 @torch.no_grad()
 def predict_on_function(args, funcs, model, tokenizer):
-    infer_dataset = TextDataset(tokenizer, args, file_type='infer', funcs=funcs)
-    y_preds, y_probs, all_line_scores = imdbug_test(args, model, tokenizer, infer_dataset,
-                                                    best_threshold=args.best_threshold)
+    infer_dataset = TextDataset(tokenizer, args, file_type="infer", funcs=funcs)
+    y_preds, y_probs, all_line_scores = imdbug_test(
+        args, model, tokenizer, infer_dataset, best_threshold=args.best_threshold
+    )
     return all_line_scores, y_preds, y_probs
 
 
 def imdbug_test(args, model, tokenizer, test_dataset: TextDataset, best_threshold=0.5):
     # build dataloader
     test_sampler = SequentialSampler(test_dataset)
-    test_dataloader = DataLoader(test_dataset, sampler=test_sampler, batch_size=args.eval_batch_size, num_workers=0)
+    test_dataloader = DataLoader(
+        test_dataset,
+        sampler=test_sampler,
+        batch_size=args.eval_batch_size,
+        num_workers=0,
+    )
 
     # Create model
     if args.n_gpu > 1:
@@ -84,8 +103,21 @@ def imdbug_test(args, model, tokenizer, test_dataset: TextDataset, best_threshol
 
     # define reasoning method
     if args.reasoning_method == "all":
-        all_reasoning_method = ["attention", "lig", "saliency", "deeplift", "deeplift_shap", "gradient_shap"]
-        all_reasoning_method = ["attention", "saliency", "deeplift", "deeplift_shap", "gradient_shap"]
+        all_reasoning_method = [
+            "attention",
+            "lig",
+            "saliency",
+            "deeplift",
+            "deeplift_shap",
+            "gradient_shap",
+        ]
+        all_reasoning_method = [
+            "attention",
+            "saliency",
+            "deeplift",
+            "deeplift_shap",
+            "gradient_shap",
+        ]
         all_reasoning_method = ["saliency"]
     else:
         all_reasoning_method = [args.reasoning_method]
@@ -93,16 +125,14 @@ def imdbug_test(args, model, tokenizer, test_dataset: TextDataset, best_threshol
     all_line_scores = list()
     if args.do_sorting_by_line_scores:
         for reasoning_method in all_reasoning_method:
-            dataloader = DataLoader(test_dataset, sampler=test_sampler, batch_size=1, num_workers=0)
+            dataloader = DataLoader(
+                test_dataset, sampler=test_sampler, batch_size=1, num_workers=0
+            )
             # progress_bar = tqdm(dataloader, total=len(dataloader))
             for idx, curr_function in enumerate(dataloader):
                 if logits[idx] > best_threshold:
                     curr_lines, curr_line_scores = get_line_scores(
-                        tokenizer,
-                        model,
-                        curr_function,
-                        args,
-                        reasoning_method
+                        tokenizer, model, curr_function, args, reasoning_method
                     )
                 else:
                     curr_line_scores = list()
@@ -110,7 +140,9 @@ def imdbug_test(args, model, tokenizer, test_dataset: TextDataset, best_threshol
     return y_preds, y_probs, all_line_scores
 
 
-def compute_line_score_from_att(word_att_scores: list) -> Tuple[List[str], List[Union[Tensor, int]]]:
+def compute_line_score_from_att(
+    word_att_scores: list,
+) -> Tuple[List[str], List[Union[Tensor, int]]]:
     # word_att_scores -> [[token, att_value], [token, att_value], ...]
     separator = ["Ċ", " Ċ"]
     double_seps = ["ĊĊ", " ĊĊ"]
@@ -130,7 +162,7 @@ def compute_line_score_from_att(word_att_scores: list) -> Tuple[List[str], List[
             all_lines.append(line)
             if curr_word in double_seps:
                 all_lines_score.append(0)
-                all_lines.append('')
+                all_lines.append("")
             line = ""
             score_sum = 0
             line_idx += 1
@@ -142,7 +174,9 @@ def compute_line_score_from_att(word_att_scores: list) -> Tuple[List[str], List[
     return all_lines, all_lines_score
 
 
-def get_line_scores(tokenizer, model, mini_batch, args, reasoning_method: str) -> Dict[str, float]:
+def get_line_scores(
+    tokenizer, model, mini_batch, args, reasoning_method: str
+) -> Dict[str, float]:
     # function for captum LIG.
     def predict(input_ids):
         return model(input_ids=input_ids)[0]
@@ -178,20 +212,30 @@ def get_line_scores(tokenizer, model, mini_batch, args, reasoning_method: str) -
 
         # clean att score for <s> and </s>
         attention = clean_special_token_values(attention, padding=True)
-        word_att_scores = get_word_att_scores(all_tokens=all_tokens, att_scores=attention)
+        word_att_scores = get_word_att_scores(
+            all_tokens=all_tokens, att_scores=attention
+        )
 
     elif reasoning_method == "lig":
-        ref_token_id, sep_token_id, cls_token_id = tokenizer.pad_token_id, tokenizer.sep_token_id, tokenizer.cls_token_id
-        ref_input_ids = create_ref_input_ids(input_ids, ref_token_id, sep_token_id, cls_token_id)
+        ref_token_id, sep_token_id, cls_token_id = (
+            tokenizer.pad_token_id,
+            tokenizer.sep_token_id,
+            tokenizer.cls_token_id,
+        )
+        ref_input_ids = create_ref_input_ids(
+            input_ids, ref_token_id, sep_token_id, cls_token_id
+        )
 
         # send data to device
         input_ids = input_ids.to(args.device)
         ref_input_ids = ref_input_ids.to(args.device)
         lig = LayerIntegratedGradients(lig_forward, model.encoder.roberta.embeddings)
-        attributions, delta = lig.attribute(inputs=input_ids,
-                                            baselines=ref_input_ids,
-                                            internal_batch_size=32,
-                                            return_convergence_delta=True)
+        attributions, delta = lig.attribute(
+            inputs=input_ids,
+            baselines=ref_input_ids,
+            internal_batch_size=32,
+            return_convergence_delta=True,
+        )
         score = predict(input_ids)
         attributions_sum = summarize_attributions(attributions)
         attr_scores = attributions_sum.tolist()
@@ -199,7 +243,9 @@ def get_line_scores(tokenizer, model, mini_batch, args, reasoning_method: str) -
         assert len(all_tokens) == len(attr_scores)
 
         # store tokens and attr scores together in a list of tuple [(token, attr_score)]
-        word_att_scores = get_word_att_scores(all_tokens=all_tokens, att_scores=attr_scores)
+        word_att_scores = get_word_att_scores(
+            all_tokens=all_tokens, att_scores=attr_scores
+        )
         word_att_scores = clean_word_attr_scores(word_attr_scores=word_att_scores)
 
     elif reasoning_method in ["deeplift", "deeplift_shap", "gradient_shap", "saliency"]:
@@ -228,14 +274,18 @@ def get_line_scores(tokenizer, model, mini_batch, args, reasoning_method: str) -
         if reasoning_method == "saliency":
             attributions = reasoning_model.attribute(input_embed, target=1)
         else:
-            attributions = reasoning_model.attribute(input_embed, baselines=baselines, target=1)
+            attributions = reasoning_model.attribute(
+                input_embed, baselines=baselines, target=1
+            )
 
         attributions_sum = summarize_attributions(attributions)
         attr_scores = attributions_sum.tolist()
         # each token should have one score
         assert len(all_tokens) == len(attr_scores)
         # store tokens and attr scores together in a list of tuple [(token, attr_score)]
-        word_att_scores = get_word_att_scores(all_tokens=all_tokens, att_scores=attr_scores)
+        word_att_scores = get_word_att_scores(
+            all_tokens=all_tokens, att_scores=attr_scores
+        )
         # remove <s>, </s>, <unk>, <pad>
         word_att_scores = clean_word_attr_scores(word_attr_scores=word_att_scores)
 

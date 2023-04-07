@@ -1,4 +1,4 @@
-import pandas as pd 
+import pandas as pd
 
 df = pd.read_csv("data/static_analysis_results.csv")
 
@@ -29,23 +29,23 @@ for i in range(len(df)):
 
     if catched_flaw_lines >= recall_20_goal:
         achieve_effort_goal = True
-    
+
     if not record_recall_1_loc and sum(effort_20_recall) >= recall_1_loc:
         record_recall_1_loc = True
-        total_catched_recall_1_loc = catched_flaw_lines        
-        
+        total_catched_recall_1_loc = catched_flaw_lines
+
     stc_result = static_results[i].split("\n")
     stc_result = [x for x in stc_result if x != "" and "error:" in x]
     if stc_result == []:
         continue
     flaw_lines_truth = line_level_truth[i]
     source = source_func[i]
-    
+
     # calculate default IFA that is used when static tool can't catch any flaw lines
     ifa = None
 
     effort = None
-    
+
     total_flaw_lines = len(flaw_lines_truth.split("/~/"))
     total_flaws += total_flaw_lines
 
@@ -71,19 +71,19 @@ for i in range(len(df)):
 
     for error in stc_result:
         if get_error is not True:
-            error = error.split("error:")[1] 
+            error = error.split("error:")[1]
             errs = error.split(" ")
             errs = [x for x in errs if x != "syntax" and x != "error" and x != ""]
             errs = [x.replace("[syntaxError]", "") for x in errs]
             for err in errs:
                 if err in flaw_lines_truth:
-                    correct_count += 1 
+                    correct_count += 1
                     get_error = True
                     ifa = 0
                     effort = 1
                     if top_10 is False:
                         top_10_count += 1
-                        top_10 = True 
+                        top_10 = True
                     break
     ifa_records.append(ifa)
 
@@ -103,6 +103,6 @@ print(f"IFA: {sum(ifa_records) / len(ifa_records)}")
 print(f"Effort@20Recall: {sum(effort_20_recall) / total_loc}")
 print(f"Recall@1LOC: {total_catched_recall_1_loc / total_flaws}")
 
-# for boxplot only 
-#model_type = ["CppCheck" for _ in range(len(ifa_records))]
-#pd.DataFrame({"model_type": model_type, "ifa": ifa_records}).to_csv("./ifa_boxplot.csv", index=False)
+# for boxplot only
+# model_type = ["CppCheck" for _ in range(len(ifa_records))]
+# pd.DataFrame({"model_type": model_type, "ifa": ifa_records}).to_csv("./ifa_boxplot.csv", index=False)

@@ -135,13 +135,16 @@ def to_json(o):
 # We intentionally merge all of flawfinder's functionality into 1 file
 # so it's trivial to copy & use elsewhere.
 
+
 class SarifLogger(object):
     _hitlist = None
     TOOL_NAME = "Flawfinder"
     TOOL_URL = "https://dwheeler.com/flawfinder/"
     TOOL_VERSION = version
     URI_BASE_ID = "SRCROOT"
-    SARIF_SCHEMA = "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json"
+    SARIF_SCHEMA = (
+        "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json"
+    )
     SARIF_SCHEMA_VERSION = "2.1.0"
     CWE_TAXONOMY_NAME = "CWE"
     CWE_TAXONOMY_URI = "https://raw.githubusercontent.com/sarif-standard/taxonomies/main/CWE_v4.4.sarif"
@@ -157,26 +160,32 @@ class SarifLogger(object):
                 "version": self.TOOL_VERSION,
                 "informationUri": self.TOOL_URL,
                 "rules": self._extract_rules(self._hitlist),
-                "supportedTaxonomies": [{
-                    "name": self.CWE_TAXONOMY_NAME,
-                    "guid": self.CWE_TAXONOMY_GUID,
-                }],
+                "supportedTaxonomies": [
+                    {
+                        "name": self.CWE_TAXONOMY_NAME,
+                        "guid": self.CWE_TAXONOMY_GUID,
+                    }
+                ],
             }
         }
 
-        runs = [{
-            "tool": tool,
-            "columnKind": "utf16CodeUnits",
-            "results": self._extract_results(self._hitlist),
-            "externalPropertyFileReferences": {
-                "taxonomies": [{
-                    "location": {
-                        "uri": self.CWE_TAXONOMY_URI,
-                    },
-                    "guid": self.CWE_TAXONOMY_GUID,
-                }],
-            },
-        }]
+        runs = [
+            {
+                "tool": tool,
+                "columnKind": "utf16CodeUnits",
+                "results": self._extract_results(self._hitlist),
+                "externalPropertyFileReferences": {
+                    "taxonomies": [
+                        {
+                            "location": {
+                                "uri": self.CWE_TAXONOMY_URI,
+                            },
+                            "guid": self.CWE_TAXONOMY_GUID,
+                        }
+                    ],
+                },
+            }
+        ]
 
         report = {
             "$schema": self.SARIF_SCHEMA,
@@ -219,34 +228,36 @@ class SarifLogger(object):
             "ruleId": hit.ruleid,
             "level": self._to_sarif_level(hit.level),
             "message": {
-                "text": self._append_period("{0}/{1}:{2}".format(hit.category, hit.name, hit.warning)),
+                "text": self._append_period(
+                    "{0}/{1}:{2}".format(hit.category, hit.name, hit.warning)
+                ),
             },
-            "locations": [{
-                "physicalLocation": {
-                    "artifactLocation": {
-                        "uri": self._to_uri_path(hit.filename),
-                        "uriBaseId": self.URI_BASE_ID,
-                    },
-                    "region": {
-                        "startLine": hit.line,
-                        "startColumn": hit.column,
-                        "endColumn": len(hit.context_text) + 1,
-                        "snippet": {
-                            "text": hit.context_text,
-                        }
+            "locations": [
+                {
+                    "physicalLocation": {
+                        "artifactLocation": {
+                            "uri": self._to_uri_path(hit.filename),
+                            "uriBaseId": self.URI_BASE_ID,
+                        },
+                        "region": {
+                            "startLine": hit.line,
+                            "startColumn": hit.column,
+                            "endColumn": len(hit.context_text) + 1,
+                            "snippet": {
+                                "text": hit.context_text,
+                            },
+                        },
                     }
                 }
-            }],
-            "fingerprints": {
-                "contextHash/v1": hit.fingerprint()
-            },
+            ],
+            "fingerprints": {"contextHash/v1": hit.fingerprint()},
             "rank": self._to_sarif_rank(hit.level),
         }
 
     def _extract_relationships(self, cwestring):
         # example cwe string "CWE-119!/ CWE-120", "CWE-829, CWE-20"
         relationships = []
-        for cwe in re.split(',|/', cwestring):
+        for cwe in re.split(",|/", cwestring):
             cwestr = cwe.strip()
             if cwestr:
                 relationship = {
@@ -257,9 +268,7 @@ class SarifLogger(object):
                             "guid": self.CWE_TAXONOMY_GUID,
                         },
                     },
-                    "kinds": [
-                        "relevant" if cwestr[-1] != '!' else "incomparable"
-                    ],
+                    "kinds": ["relevant" if cwestr[-1] != "!" else "incomparable"],
                 }
                 relationships.append(relationship)
         return relationships
@@ -292,7 +301,7 @@ class SarifLogger(object):
 
     @staticmethod
     def _append_period(text):
-        return text if text[-1] == '.' else text + "."
+        return text if text[-1] == "." else text + "."
 
 
 # The following code accepts unified diff format from both subversion (svn)
@@ -339,12 +348,12 @@ class SarifLogger(object):
 # unified format.
 #
 
-diff_index_filename = re.compile(r'^Index:\s+(?P<filename>.*)')
-diff_git_filename = re.compile(r'^diff --git a/.* b/(?P<filename>.*)$')
-diff_newfile = re.compile(r'^\+\+\+\s(?P<filename>.*)$')
-diff_hunk = re.compile(r'^@@ -\d+(,\d+)?\s+\+(?P<linenumber>\d+)[, ].*@@')
-diff_line_added = re.compile(r'^\+[^+].*')
-diff_line_del = re.compile(r'^-[^-].*')
+diff_index_filename = re.compile(r"^Index:\s+(?P<filename>.*)")
+diff_git_filename = re.compile(r"^diff --git a/.* b/(?P<filename>.*)$")
+diff_newfile = re.compile(r"^\+\+\+\s(?P<filename>.*)$")
+diff_hunk = re.compile(r"^@@ -\d+(,\d+)?\s+\+(?P<linenumber>\d+)[, ].*@@")
+diff_line_added = re.compile(r"^\+[^+].*")
+diff_line_del = re.compile(r"^-[^-].*")
 # The "+++" newfile entries have the filename, followed by a timestamp
 # or " (comment)" postpended.
 # Timestamps can be of these forms:
@@ -353,28 +362,28 @@ diff_line_del = re.compile(r'^-[^-].*')
 # Also, "newfile" can have " (comment)" postpended.  Find and eliminate this.
 # Note that the expression below is Y10K (and Y100K) ready. :-).
 diff_findjunk = re.compile(
-    r'^(?P<filename>.*)('
-    r'(\s\d\d\d\d+-\d\d-\d\d\s+\d\d:\d[0-9:.]+Z?(\s+[\-\+0-9A-Z]+)?)|'
-    r'(\s[A-Za-z][a-z]+\s[A-za-z][a-z]+\s\d+\s\d+:\d[0-9:.]+Z?'
-    r'(\s[\-\+0-9]*)?\s\d\d\d\d+)|'
-    r'(\s\(.*\)))\s*$'
+    r"^(?P<filename>.*)("
+    r"(\s\d\d\d\d+-\d\d-\d\d\s+\d\d:\d[0-9:.]+Z?(\s+[\-\+0-9A-Z]+)?)|"
+    r"(\s[A-Za-z][a-z]+\s[A-za-z][a-z]+\s\d+\s\d+:\d[0-9:.]+Z?"
+    r"(\s[\-\+0-9]*)?\s\d\d\d\d+)|"
+    r"(\s\(.*\)))\s*$"
 )
 
 
 def is_svn_diff(sLine):
-    if sLine.find('Index:') != -1:
+    if sLine.find("Index:") != -1:
         return True
     return False
 
 
 def is_gnu_diff(sLine):
-    if sLine.startswith('--- '):
+    if sLine.startswith("--- "):
         return True
     return False
 
 
 def is_git_diff(sLine):
-    if sLine.startswith('diff --git a'):
+    if sLine.startswith("diff --git a"):
         return True
     return False
 
@@ -386,7 +395,7 @@ def svn_diff_get_filename(sLine):
 def gnu_diff_get_filename(sLine):
     newfile_match = diff_newfile.match(sLine)
     if newfile_match:
-        patched_filename = newfile_match.group('filename').strip()
+        patched_filename = newfile_match.group("filename").strip()
         # Clean up filename - remove trailing timestamp and/or (comment).
         return diff_findjunk.match(patched_filename)
     return None
@@ -405,7 +414,7 @@ def load_patch_info(input_patch_file):
     line_counter = 0
     initial_number = 0
     try:
-        hPatch = open(input_patch_file, 'r')
+        hPatch = open(input_patch_file, "r")
     except BaseException:
         print("Error: failed to open", h(input_patch_file))
         sys.exit(10)
@@ -425,15 +434,15 @@ def load_patch_info(input_patch_file):
         sys.exit(11)
 
     while True:  # Loop-and-half construct.  Read a line, end loop when no more
-
         # This is really a sequence of if ... elsif ... elsif..., but
         # because Python forbids '=' in conditions, we do it this way.
         filename_match = fn_get_filename(sLine)
         if filename_match:
-            patched_filename = filename_match.group('filename').strip()
+            patched_filename = filename_match.group("filename").strip()
             if patched_filename in patch:
-                error("filename occurs more than once in the patch: %s" %
-                      patched_filename)
+                error(
+                    "filename occurs more than once in the patch: %s" % patched_filename
+                )
                 sys.exit(12)
             else:
                 patch[patched_filename] = {}
@@ -446,7 +455,7 @@ def load_patch_info(input_patch_file):
                         "we have a line number without having seen a filename"
                     )
                     sys.exit(13)
-                initial_number = hunk_match.group('linenumber')
+                initial_number = hunk_match.group("linenumber")
                 line_counter = 0
             else:
                 line_added_match = diff_line_added.match(sLine)
@@ -467,7 +476,7 @@ def load_patch_info(input_patch_file):
                         line_counter += 1
 
         sLine = hPatch.readline()
-        if sLine == '':
+        if sLine == "":
             break  # Done reading.
 
     return patch
@@ -489,25 +498,25 @@ def print_multi_line(text):
     prefix = " "
     starting_position = len(prefix) + 1
     #
-    print(prefix, end='')
+    print(prefix, end="")
     position = starting_position
     #
     for w in text.split():
         if len(w) + position >= width:
             print()
-            print(prefix, end='')
+            print(prefix, end="")
             position = starting_position
-        print(' ', end='')
-        print(w, end='')
+        print(" ", end="")
+        print(w, end="")
         position += len(w) + 1
 
 
 # This matches references to CWE identifiers, so we can HTMLize them.
 # We don't refer to CWEs with one digit, so we'll only match on 2+ digits.
-link_cwe_pattern = re.compile(r'(CWE-([1-9][0-9]+))([,()!/])')
+link_cwe_pattern = re.compile(r"(CWE-([1-9][0-9]+))([,()!/])")
 
 # This matches the CWE data, including multiple entries.
-find_cwe_pattern = re.compile(r'\(CWE-[^)]*\)')
+find_cwe_pattern = re.compile(r"\(CWE-[^)]*\)")
 
 
 class Hit(object):
@@ -565,11 +574,13 @@ class Hit(object):
         return getattr(self, X)
 
     def __eq__(self, other):
-        return (self.filename == other.filename
-                and self.line == other.line
-                and self.column == other.column
-                and self.level == other.level
-                and self.name == other.name)
+        return (
+            self.filename == other.filename
+            and self.line == other.line
+            and self.column == other.column
+            and self.level == other.level
+            and self.name == other.name
+        )
 
     def __ne__(self, other):
         return not self == other
@@ -577,30 +588,44 @@ class Hit(object):
     # Return CWEs
     def cwes(self):
         result = find_cwe_pattern.search(self.warning)
-        return result.group()[1:-1] if result else ''
+        return result.group()[1:-1] if result else ""
 
     def fingerprint(self):
         """Return fingerprint of stripped context."""
         m = hashlib.sha256()
-        m.update(self.context_text.strip().encode('utf-8'))
+        m.update(self.context_text.strip().encode("utf-8"))
         return m.hexdigest()
 
     # Help uri for each defined rule. e.g. "https://dwheeler.com/flawfinder#FF1002"
     # return first CWE link for now
     def helpuri(self):
-        cwe = re.split(',|!', self.cwes())[0] + ")"
+        cwe = re.split(",|!", self.cwes())[0] + ")"
         return link_cwe_pattern.sub(
-            r'https://cwe.mitre.org/data/definitions/\2.html',
-            cwe)
+            r"https://cwe.mitre.org/data/definitions/\2.html", cwe
+        )
 
     # Show as CSV format
     def show_csv(self):
-        csv_writer.writerow([
-            self.filename, self.line, self.column, self.defaultlevel, self.level, self.category,
-            self.name, self.warning + ".", self.suggestion + "." if self.suggestion else "", self.note,
-            self.cwes(), self.context_text, self.fingerprint(),
-            version, self.ruleid, self.helpuri()
-        ])
+        csv_writer.writerow(
+            [
+                self.filename,
+                self.line,
+                self.column,
+                self.defaultlevel,
+                self.level,
+                self.category,
+                self.name,
+                self.warning + ".",
+                self.suggestion + "." if self.suggestion else "",
+                self.note,
+                self.cwes(),
+                self.context_text,
+                self.fingerprint(),
+                version,
+                self.ruleid,
+                self.helpuri(),
+            ]
+        )
 
     def show(self):
         list_of_explain_text = []
@@ -629,7 +654,8 @@ class Hit(object):
         if output_format:  # Create HTML link to CWE definitions
             main_text = link_cwe_pattern.sub(
                 r'<a href="https://cwe.mitre.org/data/definitions/\2.html">\1</a>\3',
-                main_text)
+                main_text,
+            )
         if single_line:
             text = f"warning: {main_text}"
             list_of_explain_text.append(text)
@@ -659,8 +685,7 @@ def add_warning(hit):
     global hitlist, num_ignored_hits
     if show_inputs and not hit.input:
         return
-    if required_regex and (required_regex_compiled.search(hit.warning) is
-                           None):
+    if required_regex and (required_regex_compiled.search(hit.warning) is None):
         return
     if linenumber == ignoreline:
         num_ignored_hits += 1
@@ -683,7 +708,7 @@ def extract_c_parameters(text, pos=0):
     i = pos
     # Skip whitespace and find the "("; if there isn't one, return []:
     while i < len(text):
-        if text[i] == '(':
+        if text[i] == "(":
             break
         elif text[i] in string.whitespace:
             i += 1
@@ -711,10 +736,10 @@ def extract_c_parameters(text, pos=0):
                 # but we don't need to
                 # parse that deeply, we just need to know we'll stay
                 # in string mode:
-            elif c == '\\':
+            elif c == "\\":
                 i += 1
         elif incomment:
-            if c == '*' and text[i:i + 2] == '*/':
+            if c == "*" and text[i : i + 2] == "*/":
                 incomment = 0
                 i += 1
         else:
@@ -722,42 +747,45 @@ def extract_c_parameters(text, pos=0):
                 instring = 1
             elif c == "'":
                 instring = 2
-            elif c == '/' and text[i:i + 2] == '/*':
+            elif c == "/" and text[i : i + 2] == "/*":
                 incomment = 1
                 i += 1
-            elif c == '/' and text[i:i + 2] == '//':
+            elif c == "/" and text[i : i + 2] == "//":
                 while i < len(text) and text[i] != "\n":
                     i += 1
-            elif c == '\\' and text[i:i + 2] == '\\"':
+            elif c == "\\" and text[i : i + 2] == '\\"':
                 i += 1  # Handle exposed '\"'
-            elif c == '(':
+            elif c == "(":
                 parenlevel += 1
-            elif c == ',' and (parenlevel == 1):
+            elif c == "," and (parenlevel == 1):
                 parameters.append(
-                    p_trailingbackslashes.sub('', text[currentstart:i]).strip())
+                    p_trailingbackslashes.sub("", text[currentstart:i]).strip()
+                )
                 currentstart = i + 1
-            elif c == ')':
+            elif c == ")":
                 parenlevel -= 1
                 if parenlevel <= 0:
                     parameters.append(
-                        p_trailingbackslashes.sub(
-                            '', text[currentstart:i]).strip())
+                        p_trailingbackslashes.sub("", text[currentstart:i]).strip()
+                    )
                     # Re-enable these for debugging:
                     # print " EXTRACT_C_PARAMETERS: ", text[pos:pos+80]
                     # print " RESULTS: ", parameters
                     return parameters
-            elif c == '{':
+            elif c == "{":
                 curlylevel += 1
-            elif c == '}':
+            elif c == "}":
                 curlylevel -= 1
-            elif c == ';' and curlylevel < 1:
+            elif c == ";" and curlylevel < 1:
                 internal_warn(
                     "Parsing failed to find end of parameter list; "
-                    "semicolon terminated it in %s" % text[pos:pos + 200])
+                    "semicolon terminated it in %s" % text[pos : pos + 200]
+                )
                 return parameters
         i += 1
-    internal_warn("Parsing failed to find end of parameter list in %s" %
-                  text[pos:pos + 200])
+    internal_warn(
+        "Parsing failed to find end of parameter list in %s" % text[pos : pos + 200]
+    )
     return []  # Treat unterminated list as an empty list
 
 
@@ -768,8 +796,8 @@ def extract_c_parameters(text, pos=0):
 # In practice, this doesn't seem to be a problem; gettext() is usually
 # wrapped around the entire parameter.
 # The ?s makes it posible to match multi-line strings.
-gettext_pattern = re.compile(r'(?s)^\s*' 'gettext' r'\s*\((.*)\)\s*$')
-undersc_pattern = re.compile(r'(?s)^\s*' '_(T(EXT)?)?' r'\s*\((.*)\)\s*$')
+gettext_pattern = re.compile(r"(?s)^\s*" "gettext" r"\s*\((.*)\)\s*$")
+undersc_pattern = re.compile(r"(?s)^\s*" "_(T(EXT)?)?" r"\s*\((.*)\)\s*$")
 
 
 def strip_i18n(text):
@@ -786,7 +814,7 @@ def strip_i18n(text):
     return text
 
 
-p_trailingbackslashes = re.compile(r'(\s|\\(\n|\r))*$')
+p_trailingbackslashes = re.compile(r"(\s|\\(\n|\r))*$")
 
 p_c_singleton_string = re.compile(r'^\s*L?"([^\\]|\\[^0-6]|\\[0-6]+)?"\s*$')
 
@@ -807,8 +835,8 @@ def c_constant_string(text):
 
 # Precompile patterns for speed.
 
-p_memcpy_sizeof = re.compile(r'sizeof\s*\(\s*([^)\s]*)\s*\)')
-p_memcpy_param_amp = re.compile(r'&?\s*(.*)')
+p_memcpy_sizeof = re.compile(r"sizeof\s*\(\s*([^)\s]*)\s*\)")
+p_memcpy_param_amp = re.compile(r"&?\s*(.*)")
 
 
 def c_memcpy(hit):
@@ -835,13 +863,14 @@ def c_buffer(hit):
     add_warning(hit)
 
 
-p_dangerous_strncat = re.compile(r'^\s*sizeof\s*(\(\s*)?[A-Za-z_$0-9]+'
-                                 r'\s*(\)\s*)?(-\s*1\s*)?$')
+p_dangerous_strncat = re.compile(
+    r"^\s*sizeof\s*(\(\s*)?[A-Za-z_$0-9]+" r"\s*(\)\s*)?(-\s*1\s*)?$"
+)
 # This is a heuristic: constants in C are usually given in all
 # upper case letters.  Yes, this need not be true, but it's true often
 # enough that it's worth using as a heuristic.
 # We check because strncat better not be passed a constant as the length!
-p_looks_like_constant = re.compile(r'^\s*[A-Z][A-Z_$0-9]+\s*(-\s*1\s*)?$')
+p_looks_like_constant = re.compile(r"^\s*[A-Z][A-Z_$0-9]+\s*(-\s*1\s*)?$")
 
 
 def c_strncat(hit):
@@ -868,12 +897,14 @@ def c_strncat(hit):
         # It also detects if a constant is given as a length, if the
         # constant follows common C naming rules.
         length_text = hit.parameters[3]
-        if p_dangerous_strncat.search(
-                length_text) or p_looks_like_constant.search(length_text):
+        if p_dangerous_strncat.search(length_text) or p_looks_like_constant.search(
+            length_text
+        ):
             hit.level = 5
             hit.note = (
                 "Risk is high; the length parameter appears to be a constant, "
-                "instead of computing the number of characters left.")
+                "instead of computing the number of characters left."
+            )
             add_warning(hit)
             return
     c_buffer(hit)
@@ -897,7 +928,7 @@ def c_printf(hit):
     add_warning(hit)
 
 
-p_dangerous_sprintf_format = re.compile(r'%-?([0-9]+|\*)?s')
+p_dangerous_sprintf_format = re.compile(r"%-?([0-9]+|\*)?s")
 
 
 # sprintf has both buffer and format vulnerabilities.
@@ -921,7 +952,9 @@ def c_sprintf(hit):
             if c_constant_string(source):
                 if not p_dangerous_sprintf_format.search(source):
                     hit.level = max(hit.level - 2, 1)
-                    hit.note = "Risk is low because the source has a constant maximum length."
+                    hit.note = (
+                        "Risk is low because the source has a constant maximum length."
+                    )
                 # otherwise, warn of potential buffer overflow (the default)
             else:
                 # Ho ho - a nonconstant format string - we have a different
@@ -934,8 +967,8 @@ def c_sprintf(hit):
     add_warning(hit)
 
 
-p_dangerous_scanf_format = re.compile(r'%s')
-p_low_risk_scanf_format = re.compile(r'%[0-9]+s')
+p_dangerous_scanf_format = re.compile(r"%s")
+p_low_risk_scanf_format = re.compile(r"%[0-9]+s")
 
 
 def c_scanf(hit):
@@ -951,10 +984,14 @@ def c_scanf(hit):
             elif p_low_risk_scanf_format.search(source):
                 # This is often okay, but sometimes extremely serious.
                 hit.level = 1
-                hit.warning = ("It's unclear if the %s limit in the "
-                               "format string is small enough (CWE-120)")
-                hit.suggestion = ("Check that the limit is sufficiently "
-                                  "small, or use a different input function")
+                hit.warning = (
+                    "It's unclear if the %s limit in the "
+                    "format string is small enough (CWE-120)"
+                )
+                hit.suggestion = (
+                    "Check that the limit is sufficiently "
+                    "small, or use a different input function"
+                )
             else:
                 # No risky scanf request.
                 # We'll pass it on, just in case it's needed, but at level 0
@@ -963,16 +1000,20 @@ def c_scanf(hit):
                 hit.note = "No risky scanf format detected."
         else:
             # Format isn't a constant.
-            hit.note = ("If the scanf format is influenceable "
-                        "by an attacker, it's exploitable.")
+            hit.note = (
+                "If the scanf format is influenceable "
+                "by an attacker, it's exploitable."
+            )
     add_warning(hit)
 
 
-p_dangerous_multi_byte = re.compile(r'^\s*sizeof\s*(\(\s*)?[A-Za-z_$0-9]+'
-                                    r'\s*(\)\s*)?(-\s*1\s*)?$')
+p_dangerous_multi_byte = re.compile(
+    r"^\s*sizeof\s*(\(\s*)?[A-Za-z_$0-9]+" r"\s*(\)\s*)?(-\s*1\s*)?$"
+)
 p_safe_multi_byte = re.compile(
-    r'^\s*sizeof\s*(\(\s*)?[A-Za-z_$0-9]+\s*(\)\s*)?'
-    r'/\s*sizeof\s*\(\s*?[A-Za-z_$0-9]+\s*\[\s*0\s*\]\)\s*(-\s*1\s*)?$')
+    r"^\s*sizeof\s*(\(\s*)?[A-Za-z_$0-9]+\s*(\)\s*)?"
+    r"/\s*sizeof\s*\(\s*?[A-Za-z_$0-9]+\s*\[\s*0\s*\]\)\s*(-\s*1\s*)?$"
+)
 
 
 def c_multi_byte_to_wide_char(hit):
@@ -985,18 +1026,21 @@ def c_multi_byte_to_wide_char(hit):
             hit.level = 5
             hit.note = (
                 "Risk is high, it appears that the size is given as bytes, but the "
-                "function requires size as characters.")
+                "function requires size as characters."
+            )
         elif p_safe_multi_byte.search(num_chars_to_copy):
             # This isn't really risk-free, since it might not be the destination,
             # or the destination might be a character array (if it's a char pointer,
             # the pattern is actually quite dangerous, but programmers
             # are unlikely to make that error).
             hit.level = 1
-            hit.note = "Risk is very low, the length appears to be in characters not bytes."
+            hit.note = (
+                "Risk is very low, the length appears to be in characters not bytes."
+            )
     add_warning(hit)
 
 
-p_null_text = re.compile(r'^ *(NULL|0|0x0) *$')
+p_null_text = re.compile(r"^ *(NULL|0|0x0) *$")
 
 
 def c_hit_if_null(hit):
@@ -1010,7 +1054,7 @@ def c_hit_if_null(hit):
     add_warning(hit)  # If insufficient # of parameters.
 
 
-p_static_array = re.compile(r'^[A-Za-z_]+\s+[A-Za-z0-9_$,\s\*()]+\[[^]]')
+p_static_array = re.compile(r"^[A-Za-z_]+\s+[A-Za-z0-9_$,\s\*()]+\[[^]]")
 
 
 def c_static_array(hit):
@@ -1033,26 +1077,27 @@ def cpp_unsafe_stl(hit):
 
 safe_load_library_flags = [
     # Load only from the folder where the .exe file is located
-    'LOAD_LIBRARY_SEARCH_APPLICATION_DIR',
+    "LOAD_LIBRARY_SEARCH_APPLICATION_DIR",
     # Combination of application, System32 and user directories
-    'LOAD_LIBRARY_SEARCH_DEFAULT_DIRS',
+    "LOAD_LIBRARY_SEARCH_DEFAULT_DIRS",
     # This flag requires an absolute path to the DLL to be passed
-    'LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR',
+    "LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR",
     # Load only from System32
-    'LOAD_LIBRARY_SEARCH_SYSTEM32',
+    "LOAD_LIBRARY_SEARCH_SYSTEM32",
     # Load only from directories specified with AddDllDirectory
     # or SetDllDirectory
-    'LOAD_LIBRARY_SEARCH_USER_DIRS',
+    "LOAD_LIBRARY_SEARCH_USER_DIRS",
     # Loading from the current directory will only proceed if
     # the current directory is part of the safe load list
-    'LOAD_LIBRARY_SAFE_CURRENT_DIRS'
+    "LOAD_LIBRARY_SAFE_CURRENT_DIRS",
 ]
 
 
 def load_library_ex(hit):
     # If parameter 3 has one of the flags below, it's safe.
-    if (len(hit.parameters) >= 4 and
-            any(flag in hit.parameters[3] for flag in safe_load_library_flags)):
+    if len(hit.parameters) >= 4 and any(
+        flag in hit.parameters[3] for flag in safe_load_library_flags
+    ):
         return
     normal(hit)
 
@@ -1065,8 +1110,8 @@ def normal(hit):
 # boost::system::...), because that produces too many false positives.
 # We ignore spaces before "::"
 def found_system(hit):
-    follow_text = hit.lookahead[len(hit.name):].lstrip()
-    if not follow_text.startswith('::'):
+    follow_text = hit.lookahead[len(hit.name) :].lstrip()
+    if not follow_text.startswith("::"):
         normal(hit)
 
 
@@ -1081,431 +1126,659 @@ def found_system(hit):
 # http://msdn.microsoft.com/en-us/library/bb288454.aspx
 
 c_ruleset = {
-    "strcpy":
-        (c_buffer, 4,
-         "Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)",
-         "Consider using snprintf, strcpy_s, or strlcpy (warning: strncpy easily misused)",
-         "buffer", "", {}, "FF1001"),
-
+    "strcpy": (
+        c_buffer,
+        4,
+        "Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)",
+        "Consider using snprintf, strcpy_s, or strlcpy (warning: strncpy easily misused)",
+        "buffer",
+        "",
+        {},
+        "FF1001",
+    ),
     "strcpyA|strcpyW|StrCpy|StrCpyA|lstrcpyA|lstrcpyW|_tccpy|_mbccpy|_ftcscpy|_mbsncpy|StrCpyN|StrCpyNA|StrCpyNW|StrNCpy|strcpynA|StrNCpyA|StrNCpyW|lstrcpynA|lstrcpynW":
     # We need more info on these functions; I got their names from the
     # Microsoft "banned" list.  For now, just use "normal" to process them
     # instead of "c_buffer".
-        (normal, 4,
-         "Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)",
-         "Consider using snprintf, strcpy_s, or strlcpy (warning: strncpy easily misused)",
-         "buffer", "", {}, "FF1002"),
-
-    "lstrcpy|wcscpy|_tcscpy|_mbscpy":
-        (c_buffer, 4,
-         "Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)",
-         "Consider using a function version that stops copying at the end of the buffer",
-         "buffer", "", {}, "FF1003"),
-
-    "memcpy|CopyMemory|bcopy":
-        (c_memcpy, 2,  # I've found this to have a lower risk in practice.
-         "Does not check for buffer overflows when copying to destination (CWE-120)",
-         "Make sure destination can always hold the source data",
-         "buffer", "", {}, "FF1004"),
-
-    "strcat":
-        (c_buffer, 4,
-         "Does not check for buffer overflows when concatenating to destination [MS-banned] (CWE-120)",
-         "Consider using strcat_s, strncat, strlcat, or snprintf (warning: strncat is easily misused)",
-         "buffer", "", {}, "FF1005"),
-
-    "lstrcat|wcscat|_tcscat|_mbscat":
-        (c_buffer, 4,
-         "Does not check for buffer overflows when concatenating to destination [MS-banned] (CWE-120)",
-         "",
-         "buffer", "", {}, "FF1006"),
-
+    (
+        normal,
+        4,
+        "Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)",
+        "Consider using snprintf, strcpy_s, or strlcpy (warning: strncpy easily misused)",
+        "buffer",
+        "",
+        {},
+        "FF1002",
+    ),
+    "lstrcpy|wcscpy|_tcscpy|_mbscpy": (
+        c_buffer,
+        4,
+        "Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)",
+        "Consider using a function version that stops copying at the end of the buffer",
+        "buffer",
+        "",
+        {},
+        "FF1003",
+    ),
+    "memcpy|CopyMemory|bcopy": (
+        c_memcpy,
+        2,  # I've found this to have a lower risk in practice.
+        "Does not check for buffer overflows when copying to destination (CWE-120)",
+        "Make sure destination can always hold the source data",
+        "buffer",
+        "",
+        {},
+        "FF1004",
+    ),
+    "strcat": (
+        c_buffer,
+        4,
+        "Does not check for buffer overflows when concatenating to destination [MS-banned] (CWE-120)",
+        "Consider using strcat_s, strncat, strlcat, or snprintf (warning: strncat is easily misused)",
+        "buffer",
+        "",
+        {},
+        "FF1005",
+    ),
+    "lstrcat|wcscat|_tcscat|_mbscat": (
+        c_buffer,
+        4,
+        "Does not check for buffer overflows when concatenating to destination [MS-banned] (CWE-120)",
+        "",
+        "buffer",
+        "",
+        {},
+        "FF1006",
+    ),
     # TODO: Do more analysis.  Added because they're in MS banned list.
-    "StrCat|StrCatA|StrcatW|lstrcatA|lstrcatW|strCatBuff|StrCatBuffA|StrCatBuffW|StrCatChainW|_tccat|_mbccat|_ftcscat|StrCatN|StrCatNA|StrCatNW|StrNCat|StrNCatA|StrNCatW|lstrncat|lstrcatnA|lstrcatnW":
-        (normal, 4,
-         "Does not check for buffer overflows when concatenating to destination [MS-banned] (CWE-120)",
-         "",
-         "buffer", "", {}, "FF1007"),
-
-    "strncpy":
-        (c_buffer,
-         1,  # Low risk level, because this is often used correctly when FIXING security
-         # problems, and raising it to a higher risk level would cause many false
-         # positives.
-         "Easily used incorrectly; doesn't always \\0-terminate or "
-         "check for invalid pointers [MS-banned] (CWE-120)",
-         "",
-         "buffer", "", {}, "FF1008"),
-
-    "lstrcpyn|wcsncpy|_tcsncpy|_mbsnbcpy":
-        (c_buffer,
-         1,  # Low risk level, because this is often used correctly when FIXING security
-         # problems, and raising it to a higher risk levle would cause many false
-         # positives.
-         "Easily used incorrectly; doesn't always \\0-terminate or "
-         "check for invalid pointers [MS-banned] (CWE-120)",
-         "",
-         "buffer", "", {}, "FF1009"),
-
-    "strncat":
-        (c_strncat,
-         1,  # Low risk level, because this is often used correctly when
-         # FIXING security problems, and raising it to a
-         # higher risk level would cause many false positives.
-         "Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120)",
-         "Consider strcat_s, strlcat, snprintf, or automatically resizing strings",
-         "buffer", "", {}, "FF1010"),
-
-    "lstrcatn|wcsncat|_tcsncat|_mbsnbcat":
-        (c_strncat,
-         1,  # Low risk level, because this is often used correctly when FIXING security
-         # problems, and raising it to a higher risk level would cause many false
-         # positives.
-         "Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120)",
-         "Consider strcat_s, strlcat, or automatically resizing strings",
-         "buffer", "", {}, "FF1011"),
-
-    "strccpy|strcadd":
-        (normal, 1,
-         "Subject to buffer overflow if buffer is not as big as claimed (CWE-120)",
-         "Ensure that destination buffer is sufficiently large",
-         "buffer", "", {}, "FF1012"),
-
-    "char|TCHAR|wchar_t":  # This isn't really a function call, but it works.
-        (c_static_array, 2,
-         "Statically-sized arrays can be improperly restricted, "
-         "leading to potential overflows or other issues (CWE-119!/CWE-120)",
-         "Perform bounds checking, use functions that limit length, "
-         "or ensure that the size is larger than the maximum possible length",
-         "buffer", "", {'extract_lookahead': 1}, "FF1013"),
-
-    "gets|_getts":
-        (normal, 5, "Does not check for buffer overflows (CWE-120, CWE-20)",
-         "Use fgets() instead", "buffer", "", {'input': 1}, "FF1014"),
-
+    "StrCat|StrCatA|StrcatW|lstrcatA|lstrcatW|strCatBuff|StrCatBuffA|StrCatBuffW|StrCatChainW|_tccat|_mbccat|_ftcscat|StrCatN|StrCatNA|StrCatNW|StrNCat|StrNCatA|StrNCatW|lstrncat|lstrcatnA|lstrcatnW": (
+        normal,
+        4,
+        "Does not check for buffer overflows when concatenating to destination [MS-banned] (CWE-120)",
+        "",
+        "buffer",
+        "",
+        {},
+        "FF1007",
+    ),
+    "strncpy": (
+        c_buffer,
+        1,  # Low risk level, because this is often used correctly when FIXING security
+        # problems, and raising it to a higher risk level would cause many false
+        # positives.
+        "Easily used incorrectly; doesn't always \\0-terminate or "
+        "check for invalid pointers [MS-banned] (CWE-120)",
+        "",
+        "buffer",
+        "",
+        {},
+        "FF1008",
+    ),
+    "lstrcpyn|wcsncpy|_tcsncpy|_mbsnbcpy": (
+        c_buffer,
+        1,  # Low risk level, because this is often used correctly when FIXING security
+        # problems, and raising it to a higher risk levle would cause many false
+        # positives.
+        "Easily used incorrectly; doesn't always \\0-terminate or "
+        "check for invalid pointers [MS-banned] (CWE-120)",
+        "",
+        "buffer",
+        "",
+        {},
+        "FF1009",
+    ),
+    "strncat": (
+        c_strncat,
+        1,  # Low risk level, because this is often used correctly when
+        # FIXING security problems, and raising it to a
+        # higher risk level would cause many false positives.
+        "Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120)",
+        "Consider strcat_s, strlcat, snprintf, or automatically resizing strings",
+        "buffer",
+        "",
+        {},
+        "FF1010",
+    ),
+    "lstrcatn|wcsncat|_tcsncat|_mbsnbcat": (
+        c_strncat,
+        1,  # Low risk level, because this is often used correctly when FIXING security
+        # problems, and raising it to a higher risk level would cause many false
+        # positives.
+        "Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120)",
+        "Consider strcat_s, strlcat, or automatically resizing strings",
+        "buffer",
+        "",
+        {},
+        "FF1011",
+    ),
+    "strccpy|strcadd": (
+        normal,
+        1,
+        "Subject to buffer overflow if buffer is not as big as claimed (CWE-120)",
+        "Ensure that destination buffer is sufficiently large",
+        "buffer",
+        "",
+        {},
+        "FF1012",
+    ),
+    "char|TCHAR|wchar_t": (  # This isn't really a function call, but it works.
+        c_static_array,
+        2,
+        "Statically-sized arrays can be improperly restricted, "
+        "leading to potential overflows or other issues (CWE-119!/CWE-120)",
+        "Perform bounds checking, use functions that limit length, "
+        "or ensure that the size is larger than the maximum possible length",
+        "buffer",
+        "",
+        {"extract_lookahead": 1},
+        "FF1013",
+    ),
+    "gets|_getts": (
+        normal,
+        5,
+        "Does not check for buffer overflows (CWE-120, CWE-20)",
+        "Use fgets() instead",
+        "buffer",
+        "",
+        {"input": 1},
+        "FF1014",
+    ),
     # The "sprintf" hook will raise "format" issues instead if appropriate:
-    "sprintf|vsprintf|swprintf|vswprintf|_stprintf|_vstprintf":
-        (c_sprintf, 4,
-         "Does not check for buffer overflows (CWE-120)",
-         "Use sprintf_s, snprintf, or vsnprintf",
-         "buffer", "", {}, "FF1015"),
-
-    "printf|vprintf|vwprintf|vfwprintf|_vtprintf|wprintf":
-        (c_printf, 4,
-         "If format strings can be influenced by an attacker, they can be exploited (CWE-134)",
-         "Use a constant for the format specification",
-         "format", "", {}, "FF1016"),
-
-    "fprintf|vfprintf|_ftprintf|_vftprintf|fwprintf|fvwprintf":
-        (c_printf, 4,
-         "If format strings can be influenced by an attacker, they can be exploited (CWE-134)",
-         "Use a constant for the format specification",
-         "format", "", {'format_position': 2}, "FF1017"),
-
+    "sprintf|vsprintf|swprintf|vswprintf|_stprintf|_vstprintf": (
+        c_sprintf,
+        4,
+        "Does not check for buffer overflows (CWE-120)",
+        "Use sprintf_s, snprintf, or vsnprintf",
+        "buffer",
+        "",
+        {},
+        "FF1015",
+    ),
+    "printf|vprintf|vwprintf|vfwprintf|_vtprintf|wprintf": (
+        c_printf,
+        4,
+        "If format strings can be influenced by an attacker, they can be exploited (CWE-134)",
+        "Use a constant for the format specification",
+        "format",
+        "",
+        {},
+        "FF1016",
+    ),
+    "fprintf|vfprintf|_ftprintf|_vftprintf|fwprintf|fvwprintf": (
+        c_printf,
+        4,
+        "If format strings can be influenced by an attacker, they can be exploited (CWE-134)",
+        "Use a constant for the format specification",
+        "format",
+        "",
+        {"format_position": 2},
+        "FF1017",
+    ),
     # The "syslog" hook will raise "format" issues.
-    "syslog":
-        (c_printf, 4,
-         "If syslog's format strings can be influenced by an attacker, "
-         "they can be exploited (CWE-134)",
-         "Use a constant format string for syslog",
-         "format", "", {'format_position': 2}, "FF1018"),
-
-    "snprintf|vsnprintf|_snprintf|_sntprintf|_vsntprintf":
-        (c_printf, 4,
-         "If format strings can be influenced by an attacker, they can be "
-         "exploited, and note that sprintf variations do not always \\0-terminate (CWE-134)",
-         "Use a constant for the format specification",
-         "format", "", {'format_position': 3}, "FF1019"),
-
-    "scanf|vscanf|wscanf|_tscanf|vwscanf":
-        (c_scanf, 4,
-         "The scanf() family's %s operation, without a limit specification, "
-         "permits buffer overflows (CWE-120, CWE-20)",
-         "Specify a limit to %s, or use a different input function",
-         "buffer", "", {'input': 1}, "FF1020"),
-
-    "fscanf|sscanf|vsscanf|vfscanf|_ftscanf|fwscanf|vfwscanf|vswscanf":
-        (c_scanf, 4,
-         "The scanf() family's %s operation, without a limit specification, "
-         "permits buffer overflows (CWE-120, CWE-20)",
-         "Specify a limit to %s, or use a different input function",
-         "buffer", "", {'input': 1, 'format_position': 2}, "FF1021"),
-
-    "strlen|wcslen|_tcslen|_mbslen":
-        (normal,
-         # Often this isn't really a risk, and even when it is, at worst it
-         # often causes a program crash (and nothing worse).
-         1,
-         "Does not handle strings that are not \\0-terminated; "
-         "if given one it may perform an over-read (it could cause a crash "
-         "if unprotected) (CWE-126)",
-         "",
-         "buffer", "", {}, "FF1022"),
-
-    "MultiByteToWideChar":  # Windows
-        (c_multi_byte_to_wide_char,
-         2,  # Only the default - this will be changed in many cases.
-         "Requires maximum length in CHARACTERS, not bytes (CWE-120)",
-         "",
-         "buffer", "", {}, "FF1023"),
-
-    "streadd|strecpy":
-        (normal, 4,
-         "This function does not protect against buffer overflows (CWE-120)",
-         "Ensure the destination has 4 times the size of the source, to leave room for expansion",
-         "buffer", "dangers-c", {}, "FF1024"),
-
-    "strtrns":
-        (normal, 3,
-         "This function does not protect against buffer overflows (CWE-120)",
-         "Ensure that destination is at least as long as the source",
-         "buffer", "dangers-c", {}, "FF1025"),
-
-    "realpath":
-        (normal, 3,
-         "This function does not protect against buffer overflows, "
-         "and some implementations can overflow internally (CWE-120/CWE-785!)",
-         "Ensure that the destination buffer is at least of size MAXPATHLEN, and"
-         "to protect against implementation problems, the input argument "
-         "should also be checked to ensure it is no larger than MAXPATHLEN",
-         "buffer", "dangers-c", {}, "FF1026"),
-
-    "getopt|getopt_long":
-        (normal, 3,
-         "Some older implementations do not protect against internal buffer overflows (CWE-120, CWE-20)",
-         "Check implementation on installation, or limit the size of all string inputs",
-         "buffer", "dangers-c", {'input': 1}, "FF1027"),
-
-    "getwd":
-        (normal, 3,
-         "This does not protect against buffer overflows "
-         "by itself, so use with caution (CWE-120, CWE-20)",
-         "Use getcwd instead",
-         "buffer", "dangers-c", {'input': 1}, "FF1028"),
-
+    "syslog": (
+        c_printf,
+        4,
+        "If syslog's format strings can be influenced by an attacker, "
+        "they can be exploited (CWE-134)",
+        "Use a constant format string for syslog",
+        "format",
+        "",
+        {"format_position": 2},
+        "FF1018",
+    ),
+    "snprintf|vsnprintf|_snprintf|_sntprintf|_vsntprintf": (
+        c_printf,
+        4,
+        "If format strings can be influenced by an attacker, they can be "
+        "exploited, and note that sprintf variations do not always \\0-terminate (CWE-134)",
+        "Use a constant for the format specification",
+        "format",
+        "",
+        {"format_position": 3},
+        "FF1019",
+    ),
+    "scanf|vscanf|wscanf|_tscanf|vwscanf": (
+        c_scanf,
+        4,
+        "The scanf() family's %s operation, without a limit specification, "
+        "permits buffer overflows (CWE-120, CWE-20)",
+        "Specify a limit to %s, or use a different input function",
+        "buffer",
+        "",
+        {"input": 1},
+        "FF1020",
+    ),
+    "fscanf|sscanf|vsscanf|vfscanf|_ftscanf|fwscanf|vfwscanf|vswscanf": (
+        c_scanf,
+        4,
+        "The scanf() family's %s operation, without a limit specification, "
+        "permits buffer overflows (CWE-120, CWE-20)",
+        "Specify a limit to %s, or use a different input function",
+        "buffer",
+        "",
+        {"input": 1, "format_position": 2},
+        "FF1021",
+    ),
+    "strlen|wcslen|_tcslen|_mbslen": (
+        normal,
+        # Often this isn't really a risk, and even when it is, at worst it
+        # often causes a program crash (and nothing worse).
+        1,
+        "Does not handle strings that are not \\0-terminated; "
+        "if given one it may perform an over-read (it could cause a crash "
+        "if unprotected) (CWE-126)",
+        "",
+        "buffer",
+        "",
+        {},
+        "FF1022",
+    ),
+    "MultiByteToWideChar": (  # Windows
+        c_multi_byte_to_wide_char,
+        2,  # Only the default - this will be changed in many cases.
+        "Requires maximum length in CHARACTERS, not bytes (CWE-120)",
+        "",
+        "buffer",
+        "",
+        {},
+        "FF1023",
+    ),
+    "streadd|strecpy": (
+        normal,
+        4,
+        "This function does not protect against buffer overflows (CWE-120)",
+        "Ensure the destination has 4 times the size of the source, to leave room for expansion",
+        "buffer",
+        "dangers-c",
+        {},
+        "FF1024",
+    ),
+    "strtrns": (
+        normal,
+        3,
+        "This function does not protect against buffer overflows (CWE-120)",
+        "Ensure that destination is at least as long as the source",
+        "buffer",
+        "dangers-c",
+        {},
+        "FF1025",
+    ),
+    "realpath": (
+        normal,
+        3,
+        "This function does not protect against buffer overflows, "
+        "and some implementations can overflow internally (CWE-120/CWE-785!)",
+        "Ensure that the destination buffer is at least of size MAXPATHLEN, and"
+        "to protect against implementation problems, the input argument "
+        "should also be checked to ensure it is no larger than MAXPATHLEN",
+        "buffer",
+        "dangers-c",
+        {},
+        "FF1026",
+    ),
+    "getopt|getopt_long": (
+        normal,
+        3,
+        "Some older implementations do not protect against internal buffer overflows (CWE-120, CWE-20)",
+        "Check implementation on installation, or limit the size of all string inputs",
+        "buffer",
+        "dangers-c",
+        {"input": 1},
+        "FF1027",
+    ),
+    "getwd": (
+        normal,
+        3,
+        "This does not protect against buffer overflows "
+        "by itself, so use with caution (CWE-120, CWE-20)",
+        "Use getcwd instead",
+        "buffer",
+        "dangers-c",
+        {"input": 1},
+        "FF1028",
+    ),
     # fread not included here; in practice I think it's rare to mistake it.
-    "getchar|fgetc|getc|read|_gettc":
-        (normal, 1,
-         "Check buffer boundaries if used in a loop including recursive loops (CWE-120, CWE-20)",
-         "",
-         "buffer", "dangers-c", {'input': 1}, "FF1029"),
-
-    "access":  # ???: TODO: analyze TOCTOU more carefully.
-        (normal, 4,
-         "This usually indicates a security flaw.  If an "
-         "attacker can change anything along the path between the "
-         "call to access() and the file's actual use (e.g., by moving "
-         "files), the attacker can exploit the race condition (CWE-362/CWE-367!)",
-         "Set up the correct permissions (e.g., using setuid()) and "
-         "try to open the file directly",
-         "race",
-         "avoid-race#atomic-filesystem", {}, "FF1030"),
-
-    "chown":
-        (normal, 5,
-         "This accepts filename arguments; if an attacker "
-         "can move those files, a race condition results. (CWE-362)",
-         "Use fchown( ) instead",
-         "race", "", {}, "FF1031"),
-
-    "chgrp":
-        (normal, 5,
-         "This accepts filename arguments; if an attacker "
-         "can move those files, a race condition results. (CWE-362)",
-         "Use fchgrp( ) instead",
-         "race", "", {}, "FF1032"),
-
-    "chmod":
-        (normal, 5,
-         "This accepts filename arguments; if an attacker "
-         "can move those files, a race condition results. (CWE-362)",
-         "Use fchmod( ) instead",
-         "race", "", {}, "FF1033"),
-
-    "vfork":
-        (normal, 2,
-         "On some old systems, vfork() permits race conditions, and it's "
-         "very difficult to use correctly (CWE-362)",
-         "Use fork() instead",
-         "race", "", {}, "FF1034"),
-
-    "readlink":
-        (normal, 5,
-         "This accepts filename arguments; if an attacker "
-         "can move those files or change the link content, "
-         "a race condition results.  "
-         "Also, it does not terminate with ASCII NUL. (CWE-362, CWE-20)",
-         # This is often just a bad idea, and it's hard to suggest a
-         # simple alternative:
-         "Reconsider approach",
-         "race", "", {'input': 1}, "FF1035"),
-
-    "tmpfile":
-        (normal, 2,
-         "Function tmpfile() has a security flaw on some systems (e.g., older System V systems) (CWE-377)",
-         "",
-         "tmpfile", "", {}, "FF1036"),
-
-    "tmpnam|tempnam":
-        (normal, 3,
-         "Temporary file race condition (CWE-377)",
-         "",
-         "tmpfile", "avoid-race", {}, "FF1037"),
-
+    "getchar|fgetc|getc|read|_gettc": (
+        normal,
+        1,
+        "Check buffer boundaries if used in a loop including recursive loops (CWE-120, CWE-20)",
+        "",
+        "buffer",
+        "dangers-c",
+        {"input": 1},
+        "FF1029",
+    ),
+    "access": (  # ???: TODO: analyze TOCTOU more carefully.
+        normal,
+        4,
+        "This usually indicates a security flaw.  If an "
+        "attacker can change anything along the path between the "
+        "call to access() and the file's actual use (e.g., by moving "
+        "files), the attacker can exploit the race condition (CWE-362/CWE-367!)",
+        "Set up the correct permissions (e.g., using setuid()) and "
+        "try to open the file directly",
+        "race",
+        "avoid-race#atomic-filesystem",
+        {},
+        "FF1030",
+    ),
+    "chown": (
+        normal,
+        5,
+        "This accepts filename arguments; if an attacker "
+        "can move those files, a race condition results. (CWE-362)",
+        "Use fchown( ) instead",
+        "race",
+        "",
+        {},
+        "FF1031",
+    ),
+    "chgrp": (
+        normal,
+        5,
+        "This accepts filename arguments; if an attacker "
+        "can move those files, a race condition results. (CWE-362)",
+        "Use fchgrp( ) instead",
+        "race",
+        "",
+        {},
+        "FF1032",
+    ),
+    "chmod": (
+        normal,
+        5,
+        "This accepts filename arguments; if an attacker "
+        "can move those files, a race condition results. (CWE-362)",
+        "Use fchmod( ) instead",
+        "race",
+        "",
+        {},
+        "FF1033",
+    ),
+    "vfork": (
+        normal,
+        2,
+        "On some old systems, vfork() permits race conditions, and it's "
+        "very difficult to use correctly (CWE-362)",
+        "Use fork() instead",
+        "race",
+        "",
+        {},
+        "FF1034",
+    ),
+    "readlink": (
+        normal,
+        5,
+        "This accepts filename arguments; if an attacker "
+        "can move those files or change the link content, "
+        "a race condition results.  "
+        "Also, it does not terminate with ASCII NUL. (CWE-362, CWE-20)",
+        # This is often just a bad idea, and it's hard to suggest a
+        # simple alternative:
+        "Reconsider approach",
+        "race",
+        "",
+        {"input": 1},
+        "FF1035",
+    ),
+    "tmpfile": (
+        normal,
+        2,
+        "Function tmpfile() has a security flaw on some systems (e.g., older System V systems) (CWE-377)",
+        "",
+        "tmpfile",
+        "",
+        {},
+        "FF1036",
+    ),
+    "tmpnam|tempnam": (
+        normal,
+        3,
+        "Temporary file race condition (CWE-377)",
+        "",
+        "tmpfile",
+        "avoid-race",
+        {},
+        "FF1037",
+    ),
     # TODO: Detect GNOME approach to mktemp and ignore it.
-    "mktemp":
-        (normal, 4,
-         "Temporary file race condition (CWE-377)",
-         "",
-         "tmpfile", "avoid-race", {}, "FF1038"),
-
-    "mkstemp":
-        (normal, 2,
-         "Potential for temporary file vulnerability in some circumstances.  Some older Unix-like systems create temp files with permission to write by all by default, so be sure to set the umask to override this. Also, some older Unix systems might fail to use O_EXCL when opening the file, so make sure that O_EXCL is used by the library (CWE-377)",
-         "",
-         "tmpfile", "avoid-race", {}, "FF1039"),
-
-    "fopen|open":
-        (normal, 2,
-         "Check when opening files - can an attacker redirect it (via symlinks), force the opening of special file type (e.g., device files), move things around to create a race condition, control its ancestors, or change its contents? (CWE-362)",
-         "",
-         "misc", "", {}, "FF1040"),
-
-    "umask":
-        (normal, 1,
-         "Ensure that umask is given most restrictive possible setting (e.g., 066 or 077) (CWE-732)",
-         "",
-         "access", "", {}, "FF1041"),
-
+    "mktemp": (
+        normal,
+        4,
+        "Temporary file race condition (CWE-377)",
+        "",
+        "tmpfile",
+        "avoid-race",
+        {},
+        "FF1038",
+    ),
+    "mkstemp": (
+        normal,
+        2,
+        "Potential for temporary file vulnerability in some circumstances.  Some older Unix-like systems create temp files with permission to write by all by default, so be sure to set the umask to override this. Also, some older Unix systems might fail to use O_EXCL when opening the file, so make sure that O_EXCL is used by the library (CWE-377)",
+        "",
+        "tmpfile",
+        "avoid-race",
+        {},
+        "FF1039",
+    ),
+    "fopen|open": (
+        normal,
+        2,
+        "Check when opening files - can an attacker redirect it (via symlinks), force the opening of special file type (e.g., device files), move things around to create a race condition, control its ancestors, or change its contents? (CWE-362)",
+        "",
+        "misc",
+        "",
+        {},
+        "FF1040",
+    ),
+    "umask": (
+        normal,
+        1,
+        "Ensure that umask is given most restrictive possible setting (e.g., 066 or 077) (CWE-732)",
+        "",
+        "access",
+        "",
+        {},
+        "FF1041",
+    ),
     # Windows.  TODO: Detect correct usage approaches and ignore it.
-    "GetTempFileName":
-        (normal, 3,
-         "Temporary file race condition in certain cases "
-         "(e.g., if run as SYSTEM in many versions of Windows) (CWE-377)",
-         "",
-         "tmpfile", "avoid-race", {}, "FF1042"),
-
+    "GetTempFileName": (
+        normal,
+        3,
+        "Temporary file race condition in certain cases "
+        "(e.g., if run as SYSTEM in many versions of Windows) (CWE-377)",
+        "",
+        "tmpfile",
+        "avoid-race",
+        {},
+        "FF1042",
+    ),
     # TODO: Need to detect varying levels of danger.
-    "execl|execlp|execle|execv|execvp|popen|WinExec|ShellExecute":
-        (normal, 4,
-         "This causes a new program to execute and is difficult to use safely (CWE-78)",
-         "try using a library call that implements the same functionality "
-         "if available",
-         "shell", "", {}, "FF1043"),
-
+    "execl|execlp|execle|execv|execvp|popen|WinExec|ShellExecute": (
+        normal,
+        4,
+        "This causes a new program to execute and is difficult to use safely (CWE-78)",
+        "try using a library call that implements the same functionality "
+        "if available",
+        "shell",
+        "",
+        {},
+        "FF1043",
+    ),
     # TODO: Need to detect varying levels of danger.
-    "system":
-        (found_system, 4,
-         "This causes a new program to execute and is difficult to use safely (CWE-78)",
-         "try using a library call that implements the same functionality "
-         "if available",
-         "shell", "", {'extract_lookahead': 1}, "FF1044"),
-
+    "system": (
+        found_system,
+        4,
+        "This causes a new program to execute and is difficult to use safely (CWE-78)",
+        "try using a library call that implements the same functionality "
+        "if available",
+        "shell",
+        "",
+        {"extract_lookahead": 1},
+        "FF1044",
+    ),
     # TODO: Be more specific.  The biggest problem involves "first" param NULL,
     # second param with embedded space. Windows.
-    "CreateProcessAsUser|CreateProcessWithLogon":
-        (normal, 3,
-         "This causes a new process to execute and is difficult to use safely (CWE-78)",
-         "Especially watch out for embedded spaces",
-         "shell", "", {}, "FF1045"),
-
+    "CreateProcessAsUser|CreateProcessWithLogon": (
+        normal,
+        3,
+        "This causes a new process to execute and is difficult to use safely (CWE-78)",
+        "Especially watch out for embedded spaces",
+        "shell",
+        "",
+        {},
+        "FF1045",
+    ),
     # TODO: Be more specific.  The biggest problem involves "first" param NULL,
     # second param with embedded space. Windows.
-    "CreateProcess":
-        (c_hit_if_null, 3,
-         "This causes a new process to execute and is difficult to use safely (CWE-78)",
-         "Specify the application path in the first argument, NOT as part of the second, "
-         "or embedded spaces could allow an attacker to force a different program to run",
-         "shell", "", {'check_for_null': 1}, "FF1046"),
-
-    "atoi|atol|_wtoi|_wtoi64":
-        (normal, 2,
-         "Unless checked, the resulting number can exceed the expected range "
-         "(CWE-190)",
-         "If source untrusted, check both minimum and maximum, even if the"
-         " input had no minus sign (large numbers can roll over into negative"
-         " number; consider saving to an unsigned value if that is intended)",
-         "integer", "dangers-c", {}, "FF1047"),
-
+    "CreateProcess": (
+        c_hit_if_null,
+        3,
+        "This causes a new process to execute and is difficult to use safely (CWE-78)",
+        "Specify the application path in the first argument, NOT as part of the second, "
+        "or embedded spaces could allow an attacker to force a different program to run",
+        "shell",
+        "",
+        {"check_for_null": 1},
+        "FF1046",
+    ),
+    "atoi|atol|_wtoi|_wtoi64": (
+        normal,
+        2,
+        "Unless checked, the resulting number can exceed the expected range "
+        "(CWE-190)",
+        "If source untrusted, check both minimum and maximum, even if the"
+        " input had no minus sign (large numbers can roll over into negative"
+        " number; consider saving to an unsigned value if that is intended)",
+        "integer",
+        "dangers-c",
+        {},
+        "FF1047",
+    ),
     # Random values.  Don't trigger on "initstate", it's too common a term.
-    "drand48|erand48|jrand48|lcong48|lrand48|mrand48|nrand48|random|seed48|setstate|srand|strfry|srandom|g_rand_boolean|g_rand_int|g_rand_int_range|g_rand_double|g_rand_double_range|g_random_boolean|g_random_int|g_random_int_range|g_random_double|g_random_double_range":
-        (normal, 3,
-         "This function is not sufficiently random for security-related functions such as key and nonce creation (CWE-327)",
-         "Use a more secure technique for acquiring random values",
-         "random", "", {}, "FF1048"),
-
-    "crypt|crypt_r":
-        (normal, 4,
-         "The crypt functions use a poor one-way hashing algorithm; "
-         "since they only accept passwords of 8 characters or fewer "
-         "and only a two-byte salt, they are excessively vulnerable to "
-         "dictionary attacks given today's faster computing equipment (CWE-327)",
-         "Use a different algorithm, such as SHA-256, with a larger, "
-         "non-repeating salt",
-         "crypto", "", {}, "FF1049"),
-
+    "drand48|erand48|jrand48|lcong48|lrand48|mrand48|nrand48|random|seed48|setstate|srand|strfry|srandom|g_rand_boolean|g_rand_int|g_rand_int_range|g_rand_double|g_rand_double_range|g_random_boolean|g_random_int|g_random_int_range|g_random_double|g_random_double_range": (
+        normal,
+        3,
+        "This function is not sufficiently random for security-related functions such as key and nonce creation (CWE-327)",
+        "Use a more secure technique for acquiring random values",
+        "random",
+        "",
+        {},
+        "FF1048",
+    ),
+    "crypt|crypt_r": (
+        normal,
+        4,
+        "The crypt functions use a poor one-way hashing algorithm; "
+        "since they only accept passwords of 8 characters or fewer "
+        "and only a two-byte salt, they are excessively vulnerable to "
+        "dictionary attacks given today's faster computing equipment (CWE-327)",
+        "Use a different algorithm, such as SHA-256, with a larger, "
+        "non-repeating salt",
+        "crypto",
+        "",
+        {},
+        "FF1049",
+    ),
     # OpenSSL EVP calls to use DES.
-    "EVP_des_ecb|EVP_des_cbc|EVP_des_cfb|EVP_des_ofb|EVP_desx_cbc":
-        (normal, 4,
-         "DES only supports a 56-bit keysize, which is too small given today's computers (CWE-327)",
-         "Use a different patent-free encryption algorithm with a larger keysize, "
-         "such as 3DES or AES",
-         "crypto", "", {}, "FF1050"),
-
+    "EVP_des_ecb|EVP_des_cbc|EVP_des_cfb|EVP_des_ofb|EVP_desx_cbc": (
+        normal,
+        4,
+        "DES only supports a 56-bit keysize, which is too small given today's computers (CWE-327)",
+        "Use a different patent-free encryption algorithm with a larger keysize, "
+        "such as 3DES or AES",
+        "crypto",
+        "",
+        {},
+        "FF1050",
+    ),
     # Other OpenSSL EVP calls to use small keys.
-    "EVP_rc4_40|EVP_rc2_40_cbc|EVP_rc2_64_cbc":
-        (normal, 4,
-         "These keysizes are too small given today's computers (CWE-327)",
-         "Use a different patent-free encryption algorithm with a larger keysize, "
-         "such as 3DES or AES",
-         "crypto", "", {}, "FF1051"),
-
-    "chroot":
-        (normal, 3,
-         "chroot can be very helpful, but is hard to use correctly (CWE-250, CWE-22)",
-         "Make sure the program immediately chdir(\"/\"), closes file descriptors,"
-         " and drops root privileges, and that all necessary files"
-         " (and no more!) are in the new root",
-         "misc", "", {}, "FF1052"),
-
-    "getenv|curl_getenv":
-        (normal, 3, "Environment variables are untrustable input if they can be"
-                    " set by an attacker.  They can have any content and"
-                    " length, and the same variable can be set more than once (CWE-807, CWE-20)",
-         "Check environment variables carefully before using them",
-         "buffer", "", {'input': 1}, "FF1053"),
-
-    "g_get_home_dir":
-        (normal, 3, "This function is synonymous with 'getenv(\"HOME\")';"
-                    "it returns untrustable input if the environment can be"
-                    "set by an attacker.  It can have any content and length, "
-                    "and the same variable can be set more than once (CWE-807, CWE-20)",
-         "Check environment variables carefully before using them",
-         "buffer", "", {'input': 1}, "FF1054"),
-
-    "g_get_tmp_dir":
-        (normal, 3, "This function is synonymous with 'getenv(\"TMP\")';"
-                    "it returns untrustable input if the environment can be"
-                    "set by an attacker.  It can have any content and length, "
-                    "and the same variable can be set more than once (CWE-807, CWE-20)",
-         "Check environment variables carefully before using them",
-         "buffer", "", {'input': 1}, "FF1055"),
-
+    "EVP_rc4_40|EVP_rc2_40_cbc|EVP_rc2_64_cbc": (
+        normal,
+        4,
+        "These keysizes are too small given today's computers (CWE-327)",
+        "Use a different patent-free encryption algorithm with a larger keysize, "
+        "such as 3DES or AES",
+        "crypto",
+        "",
+        {},
+        "FF1051",
+    ),
+    "chroot": (
+        normal,
+        3,
+        "chroot can be very helpful, but is hard to use correctly (CWE-250, CWE-22)",
+        'Make sure the program immediately chdir("/"), closes file descriptors,'
+        " and drops root privileges, and that all necessary files"
+        " (and no more!) are in the new root",
+        "misc",
+        "",
+        {},
+        "FF1052",
+    ),
+    "getenv|curl_getenv": (
+        normal,
+        3,
+        "Environment variables are untrustable input if they can be"
+        " set by an attacker.  They can have any content and"
+        " length, and the same variable can be set more than once (CWE-807, CWE-20)",
+        "Check environment variables carefully before using them",
+        "buffer",
+        "",
+        {"input": 1},
+        "FF1053",
+    ),
+    "g_get_home_dir": (
+        normal,
+        3,
+        "This function is synonymous with 'getenv(\"HOME\")';"
+        "it returns untrustable input if the environment can be"
+        "set by an attacker.  It can have any content and length, "
+        "and the same variable can be set more than once (CWE-807, CWE-20)",
+        "Check environment variables carefully before using them",
+        "buffer",
+        "",
+        {"input": 1},
+        "FF1054",
+    ),
+    "g_get_tmp_dir": (
+        normal,
+        3,
+        "This function is synonymous with 'getenv(\"TMP\")';"
+        "it returns untrustable input if the environment can be"
+        "set by an attacker.  It can have any content and length, "
+        "and the same variable can be set more than once (CWE-807, CWE-20)",
+        "Check environment variables carefully before using them",
+        "buffer",
+        "",
+        {"input": 1},
+        "FF1055",
+    ),
     # These are Windows-unique:
-
     # TODO: Should have lower risk if the program checks return value.
     "RpcImpersonateClient|ImpersonateLoggedOnUser|CoImpersonateClient|"
     "ImpersonateNamedPipeClient|ImpersonateDdeClientWindow|ImpersonateSecurityContext|"
-    "SetThreadToken":
-        (normal, 4, "If this call fails, the program could fail to drop heightened privileges (CWE-250)",
-         "Make sure the return value is checked, and do not continue if a failure is reported",
-         "access", "", {}, "FF1056"),
-
-    "InitializeCriticalSection":
-        (normal, 3, "Exceptions can be thrown in low-memory situations",
-         "Use InitializeCriticalSectionAndSpinCount instead",
-         "misc", "", {}, "FF1057"),
-
+    "SetThreadToken": (
+        normal,
+        4,
+        "If this call fails, the program could fail to drop heightened privileges (CWE-250)",
+        "Make sure the return value is checked, and do not continue if a failure is reported",
+        "access",
+        "",
+        {},
+        "FF1056",
+    ),
+    "InitializeCriticalSection": (
+        normal,
+        3,
+        "Exceptions can be thrown in low-memory situations",
+        "Use InitializeCriticalSectionAndSpinCount instead",
+        "misc",
+        "",
+        {},
+        "FF1057",
+    ),
     # We have *removed* the check for EnterCriticalSection.
     # The page from the "book Writing Secure Code" describes
     # EnterCriticalSection as something that will not throw errors on XP,
@@ -1518,96 +1791,151 @@ c_ruleset = {
     # (normal, 3, "On some versions of Windows, exceptions can be thrown in low-memory situations",
     #  "Use InitializeCriticalSectionAndSpinCount instead",
     #  "misc", "", {}),
-
-    "LoadLibrary":
-        (normal, 3,
-         "Ensure that the full path to the library is specified, or current directory may be used (CWE-829, CWE-20)",
-         "Use LoadLibraryEx with one of the search flags, or call SetSearchPathMode to use a safe search path, or pass a full path to the library",
-         "misc", "", {'input': 1}, "FF1058"),
-
-    "LoadLibraryEx":
-        (load_library_ex, 3,
-         "Ensure that the full path to the library is specified, or current directory may be used (CWE-829, CWE-20)",
-         "Use a flag like LOAD_LIBRARY_SEARCH_SYSTEM32 or LOAD_LIBRARY_SEARCH_APPLICATION_DIR to search only desired folders",
-         "misc", "", {'input': 1}, "FF1059"),
-
-    "SetSecurityDescriptorDacl":
-        (c_hit_if_null, 5,
-         "Never create NULL ACLs; an attacker can set it to Everyone (Deny All Access), "
-         "which would even forbid administrator access (CWE-732)",
-         "",
-         "misc", "", {'check_for_null': 3}, "FF1060"),
-
-    "AddAccessAllowedAce":
-        (normal, 3,
-         "This doesn't set the inheritance bits in the access control entry (ACE) header (CWE-732)",
-         "Make sure that you set inheritance by hand if you wish it to inherit",
-         "misc", "", {}, "FF1061"),
-
-    "getlogin":
-        (normal, 4,
-         "It's often easy to fool getlogin.  Sometimes it does not work at all, because some program messed up the utmp file.  Often, it gives only the first 8 characters of the login name. The user currently logged in on the controlling tty of our program need not be the user who started it.  Avoid getlogin() for security-related purposes (CWE-807)",
-         "Use getpwuid(geteuid()) and extract the desired information instead",
-         "misc", "", {}, "FF1062"),
-
-    "cuserid":
-        (normal, 4,
-         "Exactly what cuserid() does is poorly defined (e.g., some systems use the effective uid, like Linux, while others like System V use the real uid). Thus, you can't trust what it does. It's certainly not portable (The cuserid function was included in the 1988 version of POSIX, but removed from the 1990 version).  Also, if passed a non-null parameter, there's a risk of a buffer overflow if the passed-in buffer is not at least L_cuserid characters long (CWE-120)",
-         "Use getpwuid(geteuid()) and extract the desired information instead",
-         "misc", "", {}, "FF1063"),
-
-    "getpw":
-        (normal, 4,
-         "This function is dangerous; it may overflow the provided buffer. It extracts data from a 'protected' area, but most systems have many commands to let users modify the protected area, and it's not always clear what their limits are.  Best to avoid using this function altogether (CWE-676, CWE-120)",
-         "Use getpwuid() instead",
-         "buffer", "", {}, "FF1064"),
-
-    "getpass":
-        (normal, 4,
-         "This function is obsolete and not portable. It was in SUSv2 but removed by POSIX.2.  What it does exactly varies considerably between systems, particularly in where its prompt is displayed and where it gets its data (e.g., /dev/tty, stdin, stderr, etc.). In addition, some implementations overflow buffers. (CWE-676, CWE-120, CWE-20)",
-         "Make the specific calls to do exactly what you want.  If you continue to use it, or write your own, be sure to zero the password as soon as possible to avoid leaving the cleartext password visible in the process' address space",
-         "misc", "", {'input': 1}, "FF1065"),
-
-    "gsignal|ssignal":
-        (normal, 2,
-         "These functions are considered obsolete on most systems, and very non-portable (Linux-based systems handle them radically different, basically if gsignal/ssignal were the same as raise/signal respectively, while System V considers them a separate set and obsolete) (CWE-676)",
-         "Switch to raise/signal, or some other signalling approach",
-         "obsolete", "", {}, "FF1066"),
-
-    "memalign":
-        (normal, 1,
-         "On some systems (though not Linux-based systems) an attempt to free() results from memalign() may fail. This may, on a few systems, be exploitable.  Also note that memalign() may not check that the boundary parameter is correct (CWE-676)",
-         "Use posix_memalign instead (defined in POSIX's 1003.1d).  Don't switch to valloc(); it is marked as obsolete in BSD 4.3, as legacy in SUSv2, and is no longer defined in SUSv3.  In some cases, malloc()'s alignment may be sufficient",
-         "free", "", {}, "FF1067"),
-
-    "ulimit":
-        (normal, 1,
-         "This C routine is considered obsolete (as opposed to the shell command by the same name, which is NOT obsolete) (CWE-676)",
-         "Use getrlimit(2), setrlimit(2), and sysconf(3) instead",
-         "obsolete", "", {}, "FF1068"),
-
-    "usleep":
-        (normal, 1,
-         "This C routine is considered obsolete (as opposed to the shell command by the same name).   The interaction of this function with SIGALRM and other timer functions such as sleep(), alarm(), setitimer(), and nanosleep() is unspecified (CWE-676)",
-         "Use nanosleep(2) or setitimer(2) instead",
-         "obsolete", "", {}, "FF1069"),
-
+    "LoadLibrary": (
+        normal,
+        3,
+        "Ensure that the full path to the library is specified, or current directory may be used (CWE-829, CWE-20)",
+        "Use LoadLibraryEx with one of the search flags, or call SetSearchPathMode to use a safe search path, or pass a full path to the library",
+        "misc",
+        "",
+        {"input": 1},
+        "FF1058",
+    ),
+    "LoadLibraryEx": (
+        load_library_ex,
+        3,
+        "Ensure that the full path to the library is specified, or current directory may be used (CWE-829, CWE-20)",
+        "Use a flag like LOAD_LIBRARY_SEARCH_SYSTEM32 or LOAD_LIBRARY_SEARCH_APPLICATION_DIR to search only desired folders",
+        "misc",
+        "",
+        {"input": 1},
+        "FF1059",
+    ),
+    "SetSecurityDescriptorDacl": (
+        c_hit_if_null,
+        5,
+        "Never create NULL ACLs; an attacker can set it to Everyone (Deny All Access), "
+        "which would even forbid administrator access (CWE-732)",
+        "",
+        "misc",
+        "",
+        {"check_for_null": 3},
+        "FF1060",
+    ),
+    "AddAccessAllowedAce": (
+        normal,
+        3,
+        "This doesn't set the inheritance bits in the access control entry (ACE) header (CWE-732)",
+        "Make sure that you set inheritance by hand if you wish it to inherit",
+        "misc",
+        "",
+        {},
+        "FF1061",
+    ),
+    "getlogin": (
+        normal,
+        4,
+        "It's often easy to fool getlogin.  Sometimes it does not work at all, because some program messed up the utmp file.  Often, it gives only the first 8 characters of the login name. The user currently logged in on the controlling tty of our program need not be the user who started it.  Avoid getlogin() for security-related purposes (CWE-807)",
+        "Use getpwuid(geteuid()) and extract the desired information instead",
+        "misc",
+        "",
+        {},
+        "FF1062",
+    ),
+    "cuserid": (
+        normal,
+        4,
+        "Exactly what cuserid() does is poorly defined (e.g., some systems use the effective uid, like Linux, while others like System V use the real uid). Thus, you can't trust what it does. It's certainly not portable (The cuserid function was included in the 1988 version of POSIX, but removed from the 1990 version).  Also, if passed a non-null parameter, there's a risk of a buffer overflow if the passed-in buffer is not at least L_cuserid characters long (CWE-120)",
+        "Use getpwuid(geteuid()) and extract the desired information instead",
+        "misc",
+        "",
+        {},
+        "FF1063",
+    ),
+    "getpw": (
+        normal,
+        4,
+        "This function is dangerous; it may overflow the provided buffer. It extracts data from a 'protected' area, but most systems have many commands to let users modify the protected area, and it's not always clear what their limits are.  Best to avoid using this function altogether (CWE-676, CWE-120)",
+        "Use getpwuid() instead",
+        "buffer",
+        "",
+        {},
+        "FF1064",
+    ),
+    "getpass": (
+        normal,
+        4,
+        "This function is obsolete and not portable. It was in SUSv2 but removed by POSIX.2.  What it does exactly varies considerably between systems, particularly in where its prompt is displayed and where it gets its data (e.g., /dev/tty, stdin, stderr, etc.). In addition, some implementations overflow buffers. (CWE-676, CWE-120, CWE-20)",
+        "Make the specific calls to do exactly what you want.  If you continue to use it, or write your own, be sure to zero the password as soon as possible to avoid leaving the cleartext password visible in the process' address space",
+        "misc",
+        "",
+        {"input": 1},
+        "FF1065",
+    ),
+    "gsignal|ssignal": (
+        normal,
+        2,
+        "These functions are considered obsolete on most systems, and very non-portable (Linux-based systems handle them radically different, basically if gsignal/ssignal were the same as raise/signal respectively, while System V considers them a separate set and obsolete) (CWE-676)",
+        "Switch to raise/signal, or some other signalling approach",
+        "obsolete",
+        "",
+        {},
+        "FF1066",
+    ),
+    "memalign": (
+        normal,
+        1,
+        "On some systems (though not Linux-based systems) an attempt to free() results from memalign() may fail. This may, on a few systems, be exploitable.  Also note that memalign() may not check that the boundary parameter is correct (CWE-676)",
+        "Use posix_memalign instead (defined in POSIX's 1003.1d).  Don't switch to valloc(); it is marked as obsolete in BSD 4.3, as legacy in SUSv2, and is no longer defined in SUSv3.  In some cases, malloc()'s alignment may be sufficient",
+        "free",
+        "",
+        {},
+        "FF1067",
+    ),
+    "ulimit": (
+        normal,
+        1,
+        "This C routine is considered obsolete (as opposed to the shell command by the same name, which is NOT obsolete) (CWE-676)",
+        "Use getrlimit(2), setrlimit(2), and sysconf(3) instead",
+        "obsolete",
+        "",
+        {},
+        "FF1068",
+    ),
+    "usleep": (
+        normal,
+        1,
+        "This C routine is considered obsolete (as opposed to the shell command by the same name).   The interaction of this function with SIGALRM and other timer functions such as sleep(), alarm(), setitimer(), and nanosleep() is unspecified (CWE-676)",
+        "Use nanosleep(2) or setitimer(2) instead",
+        "obsolete",
+        "",
+        {},
+        "FF1069",
+    ),
     # Input functions, useful for -I
-    "recv|recvfrom|recvmsg|fread|readv":
-        (normal, 0, "Function accepts input from outside program (CWE-20)",
-         "Make sure input data is filtered, especially if an attacker could manipulate it",
-         "input", "", {'input': 1}, "FF1070"),
-
+    "recv|recvfrom|recvmsg|fread|readv": (
+        normal,
+        0,
+        "Function accepts input from outside program (CWE-20)",
+        "Make sure input data is filtered, especially if an attacker could manipulate it",
+        "input",
+        "",
+        {"input": 1},
+        "FF1070",
+    ),
     # Unsafe STL functions that don't check the second iterator
-    "equal|mismatch|is_permutation":
-        (cpp_unsafe_stl,
-         # Like strlen, this is mostly a risk to availability; at worst it
-         # often causes a program crash.
-         1,
-         "Function does not check the second iterator for over-read conditions (CWE-126)",
-         "This function is often discouraged by most C++ coding standards in favor of its safer alternatives provided since C++14. Consider using a form of this function that checks the second iterator before potentially overflowing it",
-         "buffer", "", {}, "FF1071"),
-
+    "equal|mismatch|is_permutation": (
+        cpp_unsafe_stl,
+        # Like strlen, this is mostly a risk to availability; at worst it
+        # often causes a program crash.
+        1,
+        "Function does not check the second iterator for over-read conditions (CWE-126)",
+        "This function is often discouraged by most C++ coding standards in favor of its safer alternatives provided since C++14. Consider using a form of this function that checks the second iterator before potentially overflowing it",
+        "buffer",
+        "",
+        {},
+        "FF1071",
+    ),
     # TODO: detect C++'s:   cin >> charbuf, where charbuf is a char array; the problem
     #       is that flawfinder doesn't have type information, and ">>" is safe with
     #       many other types.
@@ -1645,7 +1973,7 @@ def c_valid_match(text, position):
     i = position
     while i < len(text):
         c = text[i]
-        if c == '(':
+        if c == "(":
             return 1
         elif c in string.whitespace:
             i += 1
@@ -1698,16 +2026,16 @@ def process_directive():
 numberset = string.hexdigits + "_x.Ee"
 
 # Patterns for various circumstances:
-p_whitespace = re.compile(r'[ \t\v\f]+')
+p_whitespace = re.compile(r"[ \t\v\f]+")
 p_include = re.compile(r'#\s*include\s+(<.*?>|".*?")')
-p_digits = re.compile(r'[0-9]')
-p_alphaunder = re.compile(r'[A-Za-z_]')  # Alpha chars and underline.
+p_digits = re.compile(r"[0-9]")
+p_alphaunder = re.compile(r"[A-Za-z_]")  # Alpha chars and underline.
 # A "word" in C.  Note that "$" is permitted -- it's not permitted by the
 # C standard in identifiers, but gcc supports it as an extension.
-p_c_word = re.compile(r'[A-Za-z_][A-Za-z_0-9$]*')
+p_c_word = re.compile(r"[A-Za-z_][A-Za-z_0-9$]*")
 # We'll recognize ITS4 and RATS ignore directives, as well as our own,
 # for compatibility's sake:
-p_directive = re.compile(r'(?i)\s*(ITS4|Flawfinder|RATS):\s*([^\*]*)')
+p_directive = re.compile(r"(?i)\s*(ITS4|Flawfinder|RATS):\s*([^\*]*)")
 
 max_lookahead = 500  # Lookahead limit for c_static_array.
 
@@ -1719,8 +2047,12 @@ def process_c_file(code, patch_infos, extension):
     linenumber = 1
     ignoreline = -1
 
-    cpplanguage = (extension.endswith(".cpp") or extension.endswith(".cxx") or extension.endswith(".cc")
-                   or extension.endswith(".hpp"))
+    cpplanguage = (
+        extension.endswith(".cpp")
+        or extension.endswith(".cxx")
+        or extension.endswith(".cc")
+        or extension.endswith(".hpp")
+    )
     incomment = 0
     instring = 0
     linebegin = 1
@@ -1780,29 +2112,27 @@ def process_c_file(code, patch_infos, extension):
         if i < len(text):
             nextc = text[i]
         else:
-            nextc = ''
+            nextc = ""
         if incomment:
-            if c == '*' and nextc == '/':
+            if c == "*" and nextc == "/":
                 i += 1
                 incomment = 0
         elif instring:
-            if c == '\\' and (nextc != "\n"):
+            if c == "\\" and (nextc != "\n"):
                 i += 1
             elif c == '"' and instring == 1:
                 instring = 0
             elif c == "'" and instring == 2:
                 instring = 0
         else:
-            if c == '/' and nextc == '*':
-                m = p_directive.match(text,
-                                      i + 1)  # Is there a directive here?
+            if c == "/" and nextc == "*":
+                m = p_directive.match(text, i + 1)  # Is there a directive here?
                 if m:
                     process_directive()
                 i += 1
                 incomment = 1
-            elif c == '/' and nextc == '/':  # "//" comments - skip to EOL.
-                m = p_directive.match(text,
-                                      i + 1)  # Is there a directive here?
+            elif c == "/" and nextc == "/":  # "//" comments - skip to EOL.
+                m = p_directive.match(text, i + 1)  # Is there a directive here?
                 if m:
                     process_directive()
                 while i < len(text) and text[i] != "\n":
@@ -1823,9 +2153,9 @@ def process_c_file(code, patch_infos, extension):
                     word = text[startpos:endpos]
                     # print "Word is:", text[startpos:endpos]
                     if (word in c_ruleset) and c_valid_match(text, endpos):
-                        if ((patch_infos is None)
-                                or ((patch_infos is not None) and
-                                    (linenumber in patch_infos[f]))):
+                        if (patch_infos is None) or (
+                            (patch_infos is not None) and (linenumber in patch_infos[f])
+                        ):
                             # FOUND A MATCH, setup & call hook.
                             # print "HIT: #%s#\n" % word
                             # Don't use the tuple assignment form, e.g., a,b=c,d
@@ -1841,8 +2171,9 @@ def process_c_file(code, patch_infos, extension):
                             hit.context_text = get_context(text, startpos)
                             hit.parameters = extract_c_parameters(text, endpos)
                             if hit.extract_lookahead:
-                                hit.lookahead = text[startpos:
-                                                     startpos + max_lookahead]
+                                hit.lookahead = text[
+                                    startpos : startpos + max_lookahead
+                                ]
                             hit.hook(hit)
                 elif p_digits.match(c):
                     while i < len(text):  # Process a number.
@@ -1871,8 +2202,9 @@ def expand_ruleset(ruleset):
         if "|" in rule:  # We found a rule to expand.
             for newrule in rule.split("|"):
                 if newrule in ruleset:
-                    print("Error: Rule %s, when expanded, overlaps %s" % (
-                        rule, newrule))
+                    print(
+                        "Error: Rule %s, when expanded, overlaps %s" % (rule, newrule)
+                    )
                     sys.exit(15)
                 ruleset[newrule] = ruleset[rule]
             del ruleset[rule]
@@ -1885,9 +2217,9 @@ def display_ruleset(ruleset):
     sortedkeys = sorted(ruleset.keys())
     # Now, print them out:
     for key in sortedkeys:
-        print(key + "\t" + str(
-            ruleset[key][1]
-        ) + "\t" + ruleset[key][2])  # function name, default level, default warning
+        print(
+            key + "\t" + str(ruleset[key][1]) + "\t" + ruleset[key][2]
+        )  # function name, default level, default warning
 
 
 def initialize_ruleset():
@@ -1901,10 +2233,26 @@ def initialize_ruleset():
 def display_header():
     global displayed_header
     if csv_output:
-        csv_writer.writerow([
-            'File', 'Line', 'Column', 'DefaultLevel', 'Level', 'Category', 'Name', 'Warning',
-            'Suggestion', 'Note', 'CWEs', 'Context', 'Fingerprint', 'ToolVersion', 'RuleId', 'HelpUri'
-        ])
+        csv_writer.writerow(
+            [
+                "File",
+                "Line",
+                "Column",
+                "DefaultLevel",
+                "Level",
+                "Category",
+                "Name",
+                "Warning",
+                "Suggestion",
+                "Note",
+                "CWEs",
+                "Context",
+                "Fingerprint",
+                "ToolVersion",
+                "RuleId",
+                "HelpUri",
+            ]
+        )
         return
     if sarif_output:
         return
@@ -1914,18 +2262,24 @@ def display_header():
         if output_format:
             print(
                 '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" '
-                '"http://www.w3.org/TR/html4/loose.dtd">')
+                '"http://www.w3.org/TR/html4/loose.dtd">'
+            )
             print("<html>")
             print("<head>")
             print('<meta http-equiv="Content-type" content="text/html; charset=utf8">')
             print("<title>Flawfinder Results</title>")
             print('<meta name="author" content="David A. Wheeler">')
-            print('<meta name="keywords" lang="en" content="flawfinder results, security scan">')
+            print(
+                '<meta name="keywords" lang="en" content="flawfinder results, security scan">'
+            )
             print("</head>")
             print("<body>")
             print("<h1>Flawfinder Results</h1>")
             print("Here are the security scan results from")
-            print('<a href="https://dwheeler.com/flawfinder">Flawfinder version %s</a>,' % version)
+            print(
+                '<a href="https://dwheeler.com/flawfinder">Flawfinder version %s</a>,'
+                % version
+            )
             print('(C) 2001-2019 <a href="https://dwheeler.com">David A. Wheeler</a>.')
         else:
             print("Flawfinder version %s, (C) 2001-2019 David A. Wheeler." % version)
@@ -1933,23 +2287,23 @@ def display_header():
 
 
 c_extensions = {
-    '.c': 1,
-    '.h': 1,
-    '.ec': 1,
-    '.ecp': 1,  # Informix embedded C.
-    '.pgc': 1,  # Postgres embedded C.
-    '.C': 1,
-    '.cpp': 1,
-    '.CPP': 1,
-    '.cxx': 1,
-    '.cc': 1,  # C++
-    '.CC': 1,
-    '.c++': 1,  # C++.
-    '.pcc': 1,  # Oracle C++
-    '.pc': 1,  # Oracle SQL-embedded C
-    '.sc': 1,  # Oracle Pro*C pre-compiler
-    '.hpp': 1,
-    '.H': 1,  # .h - usually C++.
+    ".c": 1,
+    ".h": 1,
+    ".ec": 1,
+    ".ecp": 1,  # Informix embedded C.
+    ".pgc": 1,  # Postgres embedded C.
+    ".C": 1,
+    ".cpp": 1,
+    ".CPP": 1,
+    ".cxx": 1,
+    ".cc": 1,  # C++
+    ".CC": 1,
+    ".c++": 1,  # C++.
+    ".pcc": 1,  # Oracle C++
+    ".pc": 1,  # Oracle SQL-embedded C
+    ".sc": 1,  # Oracle Pro*C pre-compiler
+    ".hpp": 1,
+    ".H": 1,  # .h - usually C++.
 }
 
 
@@ -1968,7 +2322,8 @@ def process_file_args(files, patch_infos, extension):
 
 
 def usage():
-    print("""
+    print(
+        """
 flawfinder [--help | -h] [--version] [--listrules]
   [--allowlink] [--followdotdir] [--nolink]
            [--patch filename | -P filename]
@@ -2063,7 +2418,8 @@ flawfinder [--help | -h] [--version] [--listrules]
 
   For more information, please consult the manpage or available
   documentation.
-""")
+"""
+    )
 
 
 def process_options2():
@@ -2078,16 +2434,42 @@ def process_options2():
     global patch_file
     try:
         # Note - as a side-effect, this sets sys.argv[].
-        optlist, args = getopt.getopt(sys.argv[1:], "ce:m:nih?CSDQHIFP:", [
-            "context", "minlevel=", "immediate", "inputs", "input", "nolink",
-            "falsepositive", "falsepositives", "columns", "listrules",
-            "omittime", "allowlink", "patch=", "followdotdir", "neverignore",
-            "regex=", "quiet", "dataonly", "html", "singleline", "csv",
-            "error-level=", "sarif",
-            "loadhitlist=", "savehitlist=", "diffhitlist=", "version", "help"
-        ])
+        optlist, args = getopt.getopt(
+            sys.argv[1:],
+            "ce:m:nih?CSDQHIFP:",
+            [
+                "context",
+                "minlevel=",
+                "immediate",
+                "inputs",
+                "input",
+                "nolink",
+                "falsepositive",
+                "falsepositives",
+                "columns",
+                "listrules",
+                "omittime",
+                "allowlink",
+                "patch=",
+                "followdotdir",
+                "neverignore",
+                "regex=",
+                "quiet",
+                "dataonly",
+                "html",
+                "singleline",
+                "csv",
+                "error-level=",
+                "sarif",
+                "loadhitlist=",
+                "savehitlist=",
+                "diffhitlist=",
+                "version",
+                "help",
+            ],
+        )
         print(optlist, args)
-        for (opt, value) in optlist:
+        for opt, value in optlist:
             if opt in ("--context", "-c"):
                 show_context = 1
             elif opt in ("--columns", "-C"):
@@ -2164,7 +2546,7 @@ def process_options2():
             elif opt == "--version":
                 print(version)
                 sys.exit(0)
-            elif opt in ('-h', '-?', '--help'):
+            elif opt in ("-h", "-?", "--help"):
                 # We accept "-?" but do not document it because we don't
                 # want to encourage its use.
                 # Unix-like systems with typical shells expand glob
@@ -2178,8 +2560,7 @@ def process_options2():
         # will expand twice.  Python doesn't have a clean way to detect
         # "has globbing occurred", so this is the best I've found:
         if os.name in ("windows", "nt", "dos"):
-            sys.argv[1:] = functools.reduce(operator.add,
-                                            list(map(glob.glob, args)))
+            sys.argv[1:] = functools.reduce(operator.add, list(map(glob.glob, args)))
         else:
             sys.argv[1:] = args
     # In Python 2 the convention is "getopt.GetoptError", but we
@@ -2190,9 +2571,9 @@ def process_options2():
         usage()
         sys.exit(16)
     if output_format == 1 and list_rules == 1:
-        print('You cannot list rules in HTML format')
+        print("You cannot list rules in HTML format")
         sys.exit(20)
-    sys.argv = ['flawfinder.py', 'src/']
+    sys.argv = ["flawfinder.py", "src/"]
 
 
 def process_options(code, extension):
@@ -2248,7 +2629,7 @@ def show_final_results():
     # I'm not using <ol>, because its numbers might be confused with
     # the risk levels or line numbers.
     if diffhitlist_filename:
-        diff_file = open(diffhitlist_filename, 'rb')
+        diff_file = open(diffhitlist_filename, "rb")
         diff_hitlist = pickle.load(diff_file)
     all_line_scores = []
     for hit in hitlist:
@@ -2282,8 +2663,10 @@ def show_final_results():
         text = "Lines analyzed = %d" % sumlines
         summary_list.append(text)
         if time_analyzing > 0 and not omit_time:  # Avoid divide-by-zero.
-            text = "Time to analyzed: in approximately %.2f seconds (%.0f lines/second)" % (
-                time_analyzing, (sumlines / time_analyzing))
+            text = (
+                "Time to analyzed: in approximately %.2f seconds (%.0f lines/second)"
+                % (time_analyzing, (sumlines / time_analyzing))
+            )
             summary_list.append(text)
         text = "Physical Source Lines of Code (SLOC) = %d" % sloc
         summary_list.append(text)
@@ -2296,8 +2679,9 @@ def show_final_results():
         for i in possible_levels:
             for j in possible_levels:
                 if j >= i:
-                    count_per_level_and_up[
-                        i] = count_per_level_and_up[i] + count_per_level[j]
+                    count_per_level_and_up[i] = (
+                        count_per_level_and_up[i] + count_per_level[j]
+                    )
         # Display hits at "level x or higher"
         for i in possible_levels:
             text = text + " [%d+] %3d" % (i, count_per_level_and_up[i]) + " "
@@ -2305,26 +2689,44 @@ def show_final_results():
         if sloc > 0:
             text = "Hits/KSLOC@level+ ="
             for i in possible_levels:
-                text = text + " [%d+] %3g" % (
-                    i, count_per_level_and_up[i] * 1000.0 / sloc) + " "
+                text = (
+                    text
+                    + " [%d+] %3g" % (i, count_per_level_and_up[i] * 1000.0 / sloc)
+                    + " "
+                )
             summary_list.append(text)
         #
         if num_links_skipped:
-            print("Symlinks skipped =", num_links_skipped, "(--allowlink overrides but see doc for security issue)")
+            print(
+                "Symlinks skipped =",
+                num_links_skipped,
+                "(--allowlink overrides but see doc for security issue)",
+            )
             if output_format:
                 print("<br>")
         if num_dotdirs_skipped:
-            print("Dot directories skipped =", num_dotdirs_skipped, "(--followdotdir overrides)")
+            print(
+                "Dot directories skipped =",
+                num_dotdirs_skipped,
+                "(--followdotdir overrides)",
+            )
             if output_format:
                 print("<br>")
         if num_ignored_hits > 0:
-            print("Suppressed hits =", num_ignored_hits, "(use --neverignore to show them)")
+            print(
+                "Suppressed hits =",
+                num_ignored_hits,
+                "(use --neverignore to show them)",
+            )
             if output_format:
                 print("<br>")
         text = "Minimum risk level = %d" % minimum_level
         summary_list.append(text)
         analysis_summary = "\n".join(summary_list)
-        y_pred = {"score": "1" if all_line_scores else "0", "analysis summary": analysis_summary}
+        y_pred = {
+            "score": "1" if all_line_scores else "0",
+            "analysis summary": analysis_summary,
+        }
         return all_line_scores, y_pred
 
 
@@ -2336,9 +2738,6 @@ def save_if_desired():
         f = open(savehitlist, "wb")
         pickle.dump(hitlist, f)
         f.close()
-
-
-
 
 
 def delete_var():

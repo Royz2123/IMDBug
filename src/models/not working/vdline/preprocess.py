@@ -5,7 +5,7 @@ import sctokenizer
 # Function to open a file, put it in readable format, tokenize it, and tag each line
 def process_corpus(fname, tokens_only=False):
     print("Tokenizing file")
-    tokens = sctokenizer.tokenize_str(fname, lang='c')
+    tokens = sctokenizer.tokenize_str(fname, lang="c")
     print("File tokenized")
     # Form a dictionary with one key for every occupied line of the code file
     line_tokens = {}

@@ -6,10 +6,9 @@ from torch.nn.utils.rnn import pad_sequence
 
 
 def _collate_batch(examples, tokenizer, pad_to_multiple_of: Optional[int] = None):
-    
-    tokenizer_pad_size = 'right'
+    tokenizer_pad_size = "right"
     tokenizer_pad_id = 1
-    
+
     """Collate `examples` into a batch, using the information in `tokenizer` for padding if necessary."""
     # Tensorize if necessary.
     if isinstance(examples[0], (list, tuple)):
@@ -18,15 +17,17 @@ def _collate_batch(examples, tokenizer, pad_to_multiple_of: Optional[int] = None
     # Check if padding is necessary.
     length_of_first = examples[0].size(0)
     are_tensors_same_length = all(x.size(0) == length_of_first for x in examples)
-    if are_tensors_same_length and (pad_to_multiple_of is None or length_of_first % pad_to_multiple_of == 0):
+    if are_tensors_same_length and (
+        pad_to_multiple_of is None or length_of_first % pad_to_multiple_of == 0
+    ):
         return torch.stack(examples, dim=0)
 
     # If yes, check if we have a `pad_token`.
-#     if tokenizer._pad_token is None:
-#         raise ValueError(
-#             "You are attempting to pad samples but the tokenizer you are using"
-#             f" ({tokenizer.__class__.__name__}) does not have a pad token."
-#         )
+    #     if tokenizer._pad_token is None:
+    #         raise ValueError(
+    #             "You are attempting to pad samples but the tokenizer you are using"
+    #             f" ({tokenizer.__class__.__name__}) does not have a pad token."
+    #         )
 
     # Creating the full tensor and filling it with our data.
     max_length = max(x.size(0) for x in examples)
@@ -41,13 +42,17 @@ def _collate_batch(examples, tokenizer, pad_to_multiple_of: Optional[int] = None
     return result
 
 
-def get_special_tokens_mask( token_ids_0: List, token_ids_1: Optional[List] = None, already_has_special_tokens: bool = False
+def get_special_tokens_mask(
+    token_ids_0: List,
+    token_ids_1: Optional[List] = None,
+    already_has_special_tokens: bool = False,
 ) -> List[int]:
-    
     ## The ids of special tokens from tokenizer
-    all_special_ids = [0,1,2,3,4]
+    all_special_ids = [0, 1, 2, 3, 4]
 
-    special_tokens_mask = [1 if token in all_special_ids else 0 for token in token_ids_0]
+    special_tokens_mask = [
+        1 if token in all_special_ids else 0 for token in token_ids_0
+    ]
 
     return special_tokens_mask
 
@@ -80,12 +85,12 @@ class CustomDataCollatorForLanguageModeling:
     pad_to_multiple_of: Optional[int] = None
     tokenizer_mask_id = 4
     tokenizer_pad_id = 1
-    
-    def __init__(self,tokenizer,mlm,mlm_probability):
+
+    def __init__(self, tokenizer, mlm, mlm_probability):
         self.tokenizer = tokenizer
         self.mlm = mlm
         self.mlm_probability = mlm_probability
-    
+
     def __post_init__(self):
         if self.mlm and self.tokenizer.mask_token is None:
             raise ValueError(
@@ -96,16 +101,23 @@ class CustomDataCollatorForLanguageModeling:
     def __call__(
         self, examples: List[Union[List[int], torch.Tensor, Dict[str, torch.Tensor]]]
     ) -> Dict[str, torch.Tensor]:
-        
         # Handle dict or lists with proper padding and conversion to tensor.
         if isinstance(examples[0], (dict, BatchEncoding)):
-            batch = self.tokenizer.pad(examples, return_tensors="pt", pad_to_multiple_of=self.pad_to_multiple_of)
+            batch = self.tokenizer.pad(
+                examples,
+                return_tensors="pt",
+                pad_to_multiple_of=self.pad_to_multiple_of,
+            )
         else:
-            batch = {"input_ids": _collate_batch(examples, self.tokenizer, pad_to_multiple_of=self.pad_to_multiple_of)}
+            batch = {
+                "input_ids": _collate_batch(
+                    examples, self.tokenizer, pad_to_multiple_of=self.pad_to_multiple_of
+                )
+            }
 
         # If special token mask has been preprocessed, pop it from the dict.
         special_tokens_mask = batch.pop("special_tokens_mask", None)
-        
+
         if self.mlm:
             batch["input_ids"], batch["labels"] = self.mask_tokens(
                 batch["input_ids"], special_tokens_mask=special_tokens_mask
@@ -128,7 +140,8 @@ class CustomDataCollatorForLanguageModeling:
         probability_matrix = torch.full(labels.shape, self.mlm_probability)
         if special_tokens_mask is None:
             special_tokens_mask = [
-                get_special_tokens_mask(val, already_has_special_tokens=True) for val in labels.tolist()
+                get_special_tokens_mask(val, already_has_special_tokens=True)
+                for val in labels.tolist()
             ]
             special_tokens_mask = torch.tensor(special_tokens_mask, dtype=torch.bool)
         else:
@@ -139,12 +152,20 @@ class CustomDataCollatorForLanguageModeling:
         labels[~masked_indices] = -100  # We only compute loss on masked tokens
 
         # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
-        indices_replaced = torch.bernoulli(torch.full(labels.shape, 0.8)).bool() & masked_indices
+        indices_replaced = (
+            torch.bernoulli(torch.full(labels.shape, 0.8)).bool() & masked_indices
+        )
         inputs[indices_replaced] = self.tokenizer_mask_id
 
         # 10% of the time, we replace masked input tokens with random word
-        indices_random = torch.bernoulli(torch.full(labels.shape, 0.5)).bool() & masked_indices & ~indices_replaced
-        random_words = torch.randint(self.tokenizer.get_vocab_size(), labels.shape, dtype=torch.long)
+        indices_random = (
+            torch.bernoulli(torch.full(labels.shape, 0.5)).bool()
+            & masked_indices
+            & ~indices_replaced
+        )
+        random_words = torch.randint(
+            self.tokenizer.get_vocab_size(), labels.shape, dtype=torch.long
+        )
         inputs[indices_random] = random_words[indices_random]
 
         # The rest of the time (10% of the time) we keep the masked input tokens unchanged

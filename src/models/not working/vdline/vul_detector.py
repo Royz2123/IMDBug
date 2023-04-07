@@ -4,6 +4,7 @@ from tensorflow import keras
 from preprocess import process_corpus
 import warnings
 import numpy as np
+
 warnings.filterwarnings("ignore")
 
 # Process input file
@@ -14,8 +15,8 @@ line_list = []
 
 # Load Models
 print("Loading models")
-nlp_model = Doc2Vec.load('line_vec_model')
-class_model = keras.models.load_model('classifier_model')
+nlp_model = Doc2Vec.load("line_vec_model")
+class_model = keras.models.load_model("classifier_model")
 print("Models loaded")
 
 # Use models to convert lines of input file to vectors and classify
@@ -36,9 +37,15 @@ def calculate_average():
     average_scores = np.average(scores)
     return average_scores
 
+
 average_scores = calculate_average()
 if average_scores > 0.4:
     vul_line = line_list.index(max(line_list))
-    print("The most vulnerable line is predicted to be", vul_line, "out of", len(line_list))
+    print(
+        "The most vulnerable line is predicted to be",
+        vul_line,
+        "out of",
+        len(line_list),
+    )
 else:
     print("Probably safe code")

@@ -1,5 +1,6 @@
 # Initialize a tokenizer
 from tokenizers import ByteLevelBPETokenizer
+
 """
 tokenizer = ByteLevelBPETokenizer()
 # Customize training
@@ -19,5 +20,8 @@ tokenizer.save('./bpe_tokenizer/config.json')
 """
 
 from transformers import RobertaTokenizer
-tokenizer = RobertaTokenizer(vocab_file="bpe_tokenizer/bpe_tokenizer-vocab.json",
-                             merges_file="bpe_tokenizer/bpe_tokenizer-merges.txt")
+
+tokenizer = RobertaTokenizer(
+    vocab_file="bpe_tokenizer/bpe_tokenizer-vocab.json",
+    merges_file="bpe_tokenizer/bpe_tokenizer-merges.txt",
+)

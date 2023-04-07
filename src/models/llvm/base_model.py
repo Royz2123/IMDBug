@@ -15,12 +15,13 @@ class TextClassificationModel(object):
 
     def get_model(self):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        return pipeline(self.task,
-                        model=self.model_location, device=device)
+        return pipeline(self.task, model=self.model_location, device=device)
 
     def inference_old(self, model, tokenizer, texts: list):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        inputs = tokenizer(texts, return_tensors="pt", truncation=True, padding='max_length')
+        inputs = tokenizer(
+            texts, return_tensors="pt", truncation=True, padding="max_length"
+        )
         labels = torch.tensor([1]).unsqueeze(0)  # Batch size 1
         outputs = model(**inputs, labels=labels, device=device)
         logits = outputs.logits

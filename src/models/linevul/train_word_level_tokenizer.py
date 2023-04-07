@@ -20,19 +20,22 @@ print("Done")
 tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
 tokenizer.pre_tokenizer = Whitespace()
 
-trainer = WordLevelTrainer(vocab_size=50257,
-                           special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"],
-                           min_frequency=2)
+trainer = WordLevelTrainer(
+    vocab_size=50257,
+    special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"],
+    min_frequency=2,
+)
 
-tokenizer.train(files=['../data/tokenizer_train_data.txt'], trainer=trainer)
+tokenizer.train(files=["../data/tokenizer_train_data.txt"], trainer=trainer)
 
 # Save the files
 tokenizer.save("./word_level_tokenizer/wordlevel.json")
 
-print('done')
+print("done")
 
-tokenizer = Tokenizer.from_file('./word_level_tokenizer/wordlevel.json')
+tokenizer = Tokenizer.from_file("./word_level_tokenizer/wordlevel.json")
 
-encoded = tokenizer.encode("hello how are you hello how are you hello how are you hello how are you hello how are you hello how are you hello how are you hello how are you",)
+encoded = tokenizer.encode(
+    "hello how are you hello how are you hello how are you hello how are you hello how are you hello how are you hello how are you hello how are you",
+)
 print(encoded.ids)
-

@@ -7,7 +7,7 @@ from models.defect_detection.base_model import TextClassificationModel
 MODEL_LOCATION = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "saved_models",
-    "codebert2codebert-finetuned-code-defect-detection"
+    "codebert2codebert-finetuned-code-defect-detection",
 )
 
 
@@ -27,8 +27,12 @@ class DefectDetectionModel(BaseModel):
     def load_model(self):
         self.model = self.detect_object.get_model()
 
-    def infer(self, funcs: List[str], file_type: str = None) -> Tuple[List[List] or None, List, List]:
+    def infer(
+        self, funcs: List[str], file_type: str = None
+    ) -> Tuple[List[List] or None, List, List]:
         self.validate_load()
-        all_line_scores, y_pred, y_prob = self.detect_object.inference(self.model, funcs)
+        all_line_scores, y_pred, y_prob = self.detect_object.inference(
+            self.model, funcs
+        )
         y_pred, y_prob = DefectDetectionModel.convert_format(y_pred, y_prob)
         return None, y_pred, y_prob

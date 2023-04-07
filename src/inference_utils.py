@@ -38,13 +38,17 @@ def get_colors(all_line_scores, start_indices, y_preds, y_probs):
         all_line_scores = [[]] * len(y_preds)
 
     colors = list()
-    for start_idx, y_pred, y_prob, line_scores in zip(start_indices, y_preds, y_probs, all_line_scores):
+    for start_idx, y_pred, y_prob, line_scores in zip(
+        start_indices, y_preds, y_probs, all_line_scores
+    ):
         if y_pred:
-            colors.append({
-                "line_index": start_idx,
-                "severity": 0,
-                "text": f"This function has a {round(float(y_prob) * 100, 2)}% of being exploitable"
-            })
+            colors.append(
+                {
+                    "line_index": start_idx,
+                    "severity": 0,
+                    "text": f"This function has a {round(float(y_prob) * 100, 2)}% of being exploitable",
+                }
+            )
 
             if len(line_scores) == 0:
                 continue
@@ -53,7 +57,7 @@ def get_colors(all_line_scores, start_indices, y_preds, y_probs):
                     {
                         "line_index": start_idx + line_idx,
                         "severity": 0,
-                        "text": line_score
+                        "text": line_score,
                     }
                     for line_idx, line_score in enumerate(line_scores)
                     if line_score != ""
@@ -62,7 +66,7 @@ def get_colors(all_line_scores, start_indices, y_preds, y_probs):
                 line_code_colors: List[Dict[str, Any]] = [
                     {
                         "line_index": start_idx + line_idx,
-                        "probability": float(line_score)
+                        "probability": float(line_score),
                     }
                     for line_idx, line_score in enumerate(line_scores)
                 ]
@@ -75,16 +79,22 @@ def get_colors(all_line_scores, start_indices, y_preds, y_probs):
                     min_score = min(line_scores)
                     max_score = max(line_scores)
                     for line_code in line_code_colors:
-                        line_code["probability"] = (line_code["probability"] - min_score) / (max_score - min_score)
-                        line_code["text"] = f"This line has a {round(float(line_code['probability']) * 100, 2)}% " \
-                                            f"chance of being the reason for this"
+                        line_code["probability"] = (
+                            line_code["probability"] - min_score
+                        ) / (max_score - min_score)
+                        line_code["text"] = (
+                            f"This line has a {round(float(line_code['probability']) * 100, 2)}% "
+                            f"chance of being the reason for this"
+                        )
 
             # Add to line code colors
             colors += line_code_colors
         else:
-            colors.append({
-                "line_index": start_idx,
-                "severity": 3,
-                "text": f"This function looks fine (with {round((1 - float(y_prob)) * 100, 2)}% confidence)"
-            })
+            colors.append(
+                {
+                    "line_index": start_idx,
+                    "severity": 3,
+                    "text": f"This function looks fine (with {round((1 - float(y_prob)) * 100, 2)}% confidence)",
+                }
+            )
     return colors
