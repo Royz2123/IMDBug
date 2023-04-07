@@ -7,6 +7,7 @@ tqdm
 pickle
 sklearn
 pandas
+pre-commit
 tokenizers
 language_data
 tree_sitter

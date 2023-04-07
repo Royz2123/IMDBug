@@ -19,7 +19,9 @@ pretty_log("Initalizing IMDbug app\n", TITLE_LEVEL)
 
 # A mapping between model labels and the corresponding model
 module_names = glob.glob(os.path.join("models", "*", "model.py"))
-loaded_modules = [__import__(module_name.replace("\\", ".")[:-3]) for module_name in module_names]
+loaded_modules = [
+    __import__(module_name.replace("\\", ".")[:-3]) for module_name in module_names
+]
 models = {cls.MODEL_LABEL: cls() for cls in BaseModel.__subclasses__()}
 logging.info(f"Supported models: {list(models.keys())}")
 
@@ -55,26 +57,10 @@ async def get_model_names():
 async def analyze_example():
     pretty_log("\nReturning analyzing example")
     return [
-        {
-            "line_index": 0,
-            "severity": 0,
-            "text": f"This is an error example (sup ido)"
-        },
-        {
-            "line_index": 1,
-            "severity": 1,
-            "text": f"This is a warning example"
-        },
-        {
-            "line_index": 2,
-            "severity": 2,
-            "text": f"This is an info example"
-        },
-        {
-            "line_index": 3,
-            "severity": 3,
-            "text": f"This is an hint example"
-        }
+        {"line_index": 0, "severity": 0, "text": f"This is an error example (sup ido)"},
+        {"line_index": 1, "severity": 1, "text": f"This is a warning example"},
+        {"line_index": 2, "severity": 2, "text": f"This is an info example"},
+        {"line_index": 3, "severity": 3, "text": f"This is an hint example"},
     ]
 
 
@@ -138,5 +124,5 @@ def analyze_code(input_data: CodeInput):
 #         logging.info("\t\tLoaded model successfully")
 
 
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8080, log_config=None)
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8080, log_config=None)
