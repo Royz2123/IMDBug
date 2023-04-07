@@ -26,10 +26,6 @@ models = {cls.MODEL_LABEL: cls() for cls in BaseModel.__subclasses__()}
 logging.info(f"Supported models: {list(models.keys())}")
 
 
-# Small change
-a = 4
-
-
 @app.get("/")
 async def alive():
     pretty_log("\nReturning alive status")
